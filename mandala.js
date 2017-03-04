@@ -1,10 +1,12 @@
 var scene, camera, renderer, cameraControls;
+const bubble_radius = 14
 
 var render = function () {
     requestAnimationFrame(render);
     updateScene();
     renderer.render(scene, camera);
 };
+
 
 function init() {
     scene = new THREE.Scene();
@@ -41,9 +43,13 @@ function createGeometries() {
         )
     );
 
-    let squiggles = createSquiggleTubes(createSquiggles());
-
-
+    let squiggleLines = createSquiggles();
+    createSquiggleTubes(squiggleLines.forEach((tube) => {
+        scene.add(new THREE.Mesh(
+            tube,
+            new THREE.MeshLambertMaterial({ color: 0xfd59d7 })
+        ));
+    }));
 }
 
 function updateGeometries() {
@@ -75,18 +81,7 @@ function updateCamera() {
 }
 
 /**
- * Do walk until the function passed says that the point we have reached is out of bounds. For example, 
- * could pass a function like the following to determine if the point was outside the drawing window:
- *  (currentPointOfWalk) => {
- *      if ( currentPointOfWalk.x > window.innerWidth 
- *          || currentPointOfWalk.x < 0 
- *          || currentPointOfWalk.y > window.innerHeight 
- *          || currentPointOfWalk.y < 0 ) {
- *          return false;
- *      } else {
- *          return true;
- *      }
- * }
+ * Create a walk across a region. 
  * 
  * @param startingPoint the point from which to start the walk
  * @param isPointStillInRegion a function that determines if the walk is still within the region. For example, 
@@ -101,69 +96,86 @@ function updateCamera() {
  *          return true;
  *      }
  * }
- * @param startingVector the direction that the path is facing at the start of the process
- * @param calculateNextStep function that will calculate the next step given the current location 
+ * @param startingDirection a Vector3 indicating the direction that the path is facing at the start of the process
+ * @param calculateNextStep function that will calculate the next step given the current location, direction, 
  * and array of steps as an input. 
  * 
  * @returns an array of steps (in the form {x,y,z}) indicating the steps. 
  */
-function getStepsAcrossRegion( 
-    startingPoint, 
-    isPointStillInRegion, 
-    startingVector,
-    calculateNextStep = (location, steps) => {return {x: random(), y: random(), z:random()};} ) {
-    
+function getStepsAcrossRegion(
+    startingPoint,
+    startingDirection, //Vector3
+    isPointStillInRegion,
+    calculateNextStep = (location, direction, steps) => {
+        // direction is a vec3
+        originalDirection = new THREE.Vector3(direction);
+        originalDirection.normalize();
+        originalDirection.add(new THREE.Vector3(Math.random(), Math.random(), Math.random()));
+        return originalDirection.normalize();
+    }) {
+
     steps = [];
     let currentPoint = startingPoint;
+    let currentDirection = startingDirection;
     do {
-        steps.push(calculateNextStep(currentLocation, steps)); 
-        currentPoint = {
-            x: currentPoint.x + steps[steps.length - 1].x,
-            y: currentPoint.y + steps[steps.length - 1].y,
-        };
-    } while (isPointStillInRegion(currentPoint))
+        steps.push(calculateNextStep(currentPoint, currentDirection, steps));
+        currentPoint.add(steps[steps.length - 1]);
+    } 
+    while (isPointStillInRegion(currentPoint));
 
     return steps;
+}
+
+function createSquiggle(startPoint, steps) {
+    return new THREE.CatmullRomCurve3(
+        steps.map((step) => {
+            startPoint.add(step);
+        })
+    );
+}
+
+/**
+ * @param {*} squiggleLines 
+ */
+function createSquiggleTubes(squiggleLines) {
+    return squiggleLines.map((curve) => {
+        let tube = new THREE.TubeGeometry(curve);
+        return tube;
+    });
 }
 
 /**
  * create paths across the bubble
  * 
- * @returns array of squiggle lines
+ * @returns array of Curves
  */
 function createSquiggles() {
-    return [];
-}
-
-function createSquiggleTubes(squiggleLines) {
-    return [];
-}
-
-function createSquiggle() {
-{\displaystyle {\begin{aligned}x&=r\,\sin \theta \,\cos \varphi \\y&=r\,\sin \theta \,\sin \varphi \\z&=r\,\cos \theta \end{aligned}}}
     //herehere - need to create squiggle from one point on sphere and then the draw should put that everywhere. 
-    let phi, theta;
+    let phi, theta, normal;
     const twoPI = Math.PI * 2.0;
-    for ( i=1; i<=longitudePoints; i++) {
-        for (j=1; j<=latitudePoints; j++) {
+    const latitudePoints = 10;
+    const longitudePoints = 10;
+    let squiggles = [];
+
+    for (i = 1; i <= longitudePoints; i++) {
+        for (j = 1; j <= latitudePoints; j++) {
             // get surface normal
             theta = twoPI / i;
             phi = twoPI / j;
             x = bubble_radius * Math.sin(theta) * Math.cos(phi);
             y = bubble_radius * Math.sin(theta) * Math.sin(phi);
             z = bubble_radius * Math.cos(theta);
-            
+            normal = new THREE.Vector3(x, y, z).normalize().multiply(-1);
+            steps = getStepsAcrossRegion(new THREE.Vector3(x, y, z), normal, (point) => point.length > bubble_radius);
+            squiggles.push(createSquiggle(new THREE.Vector3(x, y, z), steps));
         }
     }
-
-    let steeps = getStepsAcrossRegion();
-    return createBeziersBetweenSteps(steeps);
-    //return createLineBetweenSteps(steeps);
+    return squiggles;
 }
 
 function createBeziersBetweenSteps(steeps) {
     return (x, y) => {
-        console.log(x,y);
+        console.log(x, y);
         let curPtX = x;
         let curPtY = y;
         context.beginPath();
@@ -171,12 +183,12 @@ function createBeziersBetweenSteps(steeps) {
         //context.strokeStyle = "green";
         context.strokeStyle = getMovingRainbowXGradient(0, widdth);
         context.moveTo(curPtX, curPtY);
-        for (i=0; i<steeps.length - 2; i++) {
+        for (i = 0; i < steeps.length - 2; i++) {
             curPtX += steeps[i].x;
             curPtY += steeps[i].y;
             context.bezierCurveTo(
-                curPtX + steeps[i+1].x, curPtY + steeps[i+1].y,
-                curPtX + steeps[i+2].x, curPtY + steeps[i+2].y,
+                curPtX + steeps[i + 1].x, curPtY + steeps[i + 1].y,
+                curPtX + steeps[i + 2].x, curPtY + steeps[i + 2].y,
                 curPtX, curPtY);
         }
         context.stroke();

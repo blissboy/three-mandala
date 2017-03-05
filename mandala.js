@@ -44,12 +44,12 @@ function createGeometries() {
     );
 
     let squiggleLines = createSquiggles();
-    createSquiggleTubes(squiggleLines.forEach((tube) => {
+    createSquiggleTubes(squiggleLines).forEach((tube) => {
         scene.add(new THREE.Mesh(
             tube,
             new THREE.MeshLambertMaterial({ color: 0xfd59d7 })
         ));
-    }));
+    });
 }
 
 function updateGeometries() {
@@ -61,7 +61,7 @@ function updateGeometries() {
 
 
 function setupLighting() {
-    scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
     let pointLight = new THREE.PointLight(0xffffff, 1);
     pointLight.position.set(25, 50, 25);
@@ -73,7 +73,7 @@ function updateLighting() {
 }
 
 function setupCamera() {
-    camera.position.z = 5;
+    camera.position.z = 25;
 }
 
 function updateCamera() {
@@ -108,7 +108,7 @@ function getStepsAcrossRegion(
     isPointStillInRegion,
     calculateNextStep = (location, direction, steps) => {
         // direction is a vec3
-        originalDirection = new THREE.Vector3(direction);
+        originalDirection = direction.clone();
         originalDirection.normalize();
         originalDirection.add(new THREE.Vector3(Math.random(), Math.random(), Math.random()));
         return originalDirection.normalize();
@@ -120,18 +120,30 @@ function getStepsAcrossRegion(
     do {
         steps.push(calculateNextStep(currentPoint, currentDirection, steps));
         currentPoint.add(steps[steps.length - 1]);
-    } 
+    }
     while (isPointStillInRegion(currentPoint));
 
     return steps;
 }
 
 function createSquiggle(startPoint, steps) {
-    return new THREE.CatmullRomCurve3(
-        steps.map((step) => {
-            startPoint.add(step);
-        })
-    );
+    let curPoint = startPoint.clone();
+    let squigglePoints = [];
+    squigglePoints.push(startPoint);
+    for ( let i=0;i<steps.length;i++){
+        let newPoint = curPoint.clone();
+        newPoint.add(steps[i]);
+        squigglePoints.push(newPoint);
+        curPoint = newPoint;
+    }
+        
+    // steps.forEach(pt => {
+    //     curPoint.add(pt);
+    //     squigglePoints.push(curPoint);
+    // });
+    //let pts = steps.map((pt) => { curPoint.addVectors(curPoint, pt); return curPoint;} );
+
+    return new THREE.CatmullRomCurve3(squigglePoints);
 }
 
 /**
@@ -139,7 +151,7 @@ function createSquiggle(startPoint, steps) {
  */
 function createSquiggleTubes(squiggleLines) {
     return squiggleLines.map((curve) => {
-        let tube = new THREE.TubeGeometry(curve);
+        let tube = new THREE.TubeGeometry(curve,64,5,8,false);
         return tube;
     });
 }
@@ -165,9 +177,12 @@ function createSquiggles() {
             x = bubble_radius * Math.sin(theta) * Math.cos(phi);
             y = bubble_radius * Math.sin(theta) * Math.sin(phi);
             z = bubble_radius * Math.cos(theta);
-            normal = new THREE.Vector3(x, y, z).normalize().multiply(-1);
-            steps = getStepsAcrossRegion(new THREE.Vector3(x, y, z), normal, (point) => point.length > bubble_radius);
-            squiggles.push(createSquiggle(new THREE.Vector3(x, y, z), steps));
+            normal = new THREE.Vector3(x, y, z).normalize().multiplyScalar(-1);
+            steps = getStepsAcrossRegion(new THREE.Vector3(x, y, z), normal, (point) => point.length() < bubble_radius);
+            if (steps.length > 1) {
+                let squiggle = createSquiggle(new THREE.Vector3(x, y, z), steps);
+                squiggles.push(squiggle);
+            }
         }
     }
     return squiggles;

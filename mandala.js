@@ -41,13 +41,32 @@ function createGeometries() {
         )
     );
 
-    let squiggleLines = createCurves();
-    createSquiggleTubes(squiggleLines).forEach((tube) => {
-        scene.add(new THREE.Mesh(
-            tube,
-            new THREE.MeshLambertMaterial({ color: 0xfd59d7 })
-        ));
-    });
+
+    let curve = new THREE.CubicBezierCurve3(
+        new THREE.Vector3( -300, 0, 0 ),
+        new THREE.Vector3( -200, 100, 0 ),
+        new THREE.Vector3( 20, -80, 0 ),
+        new THREE.Vector3( 300, 0, 0 )
+    );
+
+    let geometryManual = new THREE.TubeGeometry( curve, 50, 25, 8, false );
+    //geometryManual.vertices = curve.getPoints( 50 );
+
+    let material = new THREE.MeshLambertMaterial( { color : 0xff0000 } );
+    scene.add(new THREE.Mesh(geometryManual, material));
+
+    // Create the final object to add to the scene
+    // let curveObject = new THREE.Line( geometryManual, material );
+    // scene.add(curveObject);
+    
+    
+    // let squiggleLines = createCurves();
+    // createSquiggleTubes(squiggleLines).forEach((tube) => {
+    //     scene.add(new THREE.Mesh(
+    //         tube,
+    //         new THREE.MeshLambertMaterial({ color: 0xfd59d7 })
+    //     ));
+    // });
 
     let geometry = new THREE.SphereBufferGeometry(bubble_radius, 100, 100);
     let wireframe = new THREE.WireframeGeometry(geometry);

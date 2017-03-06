@@ -1,12 +1,11 @@
 var scene, camera, renderer, cameraControls;
-const bubble_radius = 14
+const bubble_radius = 300;
 
 var render = function () {
     requestAnimationFrame(render);
     updateScene();
     renderer.render(scene, camera);
 };
-
 
 function init() {
     scene = new THREE.Scene();
@@ -17,11 +16,10 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    var bubble_radius = 10;
+    var bubble_radius = 100;
 
     createScene();
 }
-
 
 function createScene() {
     createGeometries();
@@ -43,28 +41,45 @@ function createGeometries() {
         )
     );
 
-    let squiggleLines = createSquiggles();
+    let squiggleLines = createCurves();
     createSquiggleTubes(squiggleLines).forEach((tube) => {
         scene.add(new THREE.Mesh(
             tube,
             new THREE.MeshLambertMaterial({ color: 0xfd59d7 })
         ));
     });
+
+    let geometry = new THREE.SphereBufferGeometry(bubble_radius, 100, 100);
+    let wireframe = new THREE.WireframeGeometry(geometry);
+    let line = new THREE.LineSegments(wireframe);
+    line.material.depthTest = false;
+    line.material.opacity = 0.25;
+    line.material.transparent = true;
+
+    scene.add(line);
+
+    // scene.add(
+    //     new THREE.Mesh(
+    //         new THREE.WireframeGeometry(new THREE.SphereGeometry(bubble_radius, 64, 64)),
+    //         new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 1 })
+    //     )
+    // );
+
 }
 
 function updateGeometries() {
-    scene.children.forEach(c => {
-        c.rotation.x += 0.01;
-        c.rotation.y += 0.02;
-    });
+    // scene.children.forEach(c => {
+    //     c.rotation.x += 0.01;
+    //     c.rotation.y += 0.02;
+    // });
 }
 
 
 function setupLighting() {
-    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
 
-    let pointLight = new THREE.PointLight(0xffffff, 1);
-    pointLight.position.set(25, 50, 25);
+    let pointLight = new THREE.PointLight(0xaaaaaa, 0.6);
+    pointLight.position.set(300, 300, 300);
     scene.add(pointLight);
 }
 
@@ -73,7 +88,7 @@ function updateLighting() {
 }
 
 function setupCamera() {
-    camera.position.z = 25;
+    camera.position.z = 750;
 }
 
 function updateCamera() {
@@ -102,56 +117,69 @@ function updateCamera() {
  * 
  * @returns an array of steps (in the form {x,y,z}) indicating the steps. 
  */
-function getStepsAcrossRegion(
+function getPointsAcrossRegion(
     startingPoint,
     startingDirection, //Vector3
     isPointStillInRegion,
     calculateNextStep = (location, direction, steps) => {
-        // direction is a vec3
-        originalDirection = direction.clone();
-        originalDirection.normalize();
-        originalDirection.add(new THREE.Vector3(Math.random(), Math.random(), Math.random()));
-        return originalDirection.normalize();
+        return (new THREE.Vector3(Math.random(), Math.random(), Math.random())).normalize();
+        // // direction is a vec3
+        // originalDirection = direction.clone();
+        // originalDirection.normalize();
+        // originalDirection.add(new THREE.Vector3(Math.random(), Math.random(), Math.random()));
+        // return originalDirection.normalize();
     }) {
 
-    steps = [];
-    let currentPoint = startingPoint;
-    let currentDirection = startingDirection;
+    let steps = [];
+    let currentPoint = startingPoint.clone();
+    let currentDirection = startingDirection.clone();
+    currentPoint.add(currentDirection);
+    steps.push(currentPoint);
     do {
+        
         steps.push(calculateNextStep(currentPoint, currentDirection, steps));
         currentPoint.add(steps[steps.length - 1]);
     }
     while (isPointStillInRegion(currentPoint));
 
+    console.log('***************************')
+    console.log('starting point ' + vec3ToString(startingPoint));
+    console.log('starting direction ' + vec3ToString(startingDirection));
+    console.log('Points:');
+    steps.forEach((pt) => { console.log(`\t ${vec3ToString(pt)}`) });
+
     return steps;
 }
 
-function createSquiggle(startPoint, steps) {
+
+
+function createCurveFromStepsAndStartPoint(startPoint, steps) {
     let curPoint = startPoint.clone();
-    let squigglePoints = [];
-    squigglePoints.push(startPoint);
-    for ( let i=0;i<steps.length;i++){
+    let curvePoints = [];
+    curvePoints.push(startPoint);
+    //TODO: figure out why the map isn't working (commented below)
+    for (let i = 0; i < steps.length; i++) {
         let newPoint = curPoint.clone();
         newPoint.add(steps[i]);
-        squigglePoints.push(newPoint);
-        curPoint = newPoint;
+        curvePoints.push(newPoint);
+        curPoint = newPoint.clone();
     }
-        
+
     // steps.forEach(pt => {
     //     curPoint.add(pt);
     //     squigglePoints.push(curPoint);
     // });
     //let pts = steps.map((pt) => { curPoint.addVectors(curPoint, pt); return curPoint;} );
 
-    return new THREE.CatmullRomCurve3(squigglePoints);
+    return new THREE.CatmullRomCurve3(curvePoints);
 }
 
 /**
  * @param {*} squiggleLines 
  */
-function createSquiggleTubes(squiggleLines) {
-    return squiggleLines.map((curve) => {
-        let tube = new THREE.TubeGeometry(curve,64,5,8,false);
+function createSquiggleTubes(curves) {
+    return curves.map((curve) => {
+        let tube = new THREE.TubeGeometry(curve, 64, 5, 8, false);
         return tube;
     });
 }
@@ -161,74 +189,39 @@ function createSquiggleTubes(squiggleLines) {
  * 
  * @returns array of Curves
  */
-function createSquiggles() {
+function createCurves() {
     //herehere - need to create squiggle from one point on sphere and then the draw should put that everywhere. 
-    let phi, theta, normal;
+    //let phi, theta, normal, x,y,z;
     const twoPI = Math.PI * 2.0;
-    const latitudePoints = 10;
-    const longitudePoints = 10;
-    let squiggles = [];
+    const latitudePoints = 4;
+    const longitudePoints = 30;
+    let curves = [];
 
     for (i = 1; i <= longitudePoints; i++) {
         for (j = 1; j <= latitudePoints; j++) {
             // get surface normal
-            theta = twoPI / i;
-            phi = twoPI / j;
-            x = bubble_radius * Math.sin(theta) * Math.cos(phi);
-            y = bubble_radius * Math.sin(theta) * Math.sin(phi);
-            z = bubble_radius * Math.cos(theta);
-            normal = new THREE.Vector3(x, y, z).normalize().multiplyScalar(-1);
-            steps = getStepsAcrossRegion(new THREE.Vector3(x, y, z), normal, (point) => point.length() < bubble_radius);
+            let theta = twoPI / i;
+            let phi = twoPI / j;
+            let x = bubble_radius * Math.sin(theta) * Math.cos(phi);
+            let y = bubble_radius * Math.sin(theta) * Math.sin(phi);
+            let z = bubble_radius * Math.cos(theta);
+            let pt = new THREE.Vector3(x,y,z);
+            let normal = new THREE.Vector3(x, y, z).normalize().multiplyScalar(-1);
+            console.log(`normal = ${vec3ToString(normal)}`);
+            //let curve = new THREE.LineCurve(pt, pt.clone().addVectors(pt, normal.multiplyScalar(2 * bubble_radius)));
+            //curves.push(curve);
+            
+            let steps = getPointsAcrossRegion(new THREE.Vector3(x, y, z), normal, (point) => point.length() < bubble_radius);
             if (steps.length > 1) {
-                let squiggle = createSquiggle(new THREE.Vector3(x, y, z), steps);
-                squiggles.push(squiggle);
+                let squiggle = createCurveFromStepsAndStartPoint(new THREE.Vector3(x, y, z), steps);
+                curves.push(squiggle);
             }
         }
     }
-    return squiggles;
+    return curves;
 }
 
-function createBeziersBetweenSteps(steeps) {
-    return (x, y) => {
-        console.log(x, y);
-        let curPtX = x;
-        let curPtY = y;
-        context.beginPath();
-        context.lineWidth = "1";
-        //context.strokeStyle = "green";
-        context.strokeStyle = getMovingRainbowXGradient(0, widdth);
-        context.moveTo(curPtX, curPtY);
-        for (i = 0; i < steeps.length - 2; i++) {
-            curPtX += steeps[i].x;
-            curPtY += steeps[i].y;
-            context.bezierCurveTo(
-                curPtX + steeps[i + 1].x, curPtY + steeps[i + 1].y,
-                curPtX + steeps[i + 2].x, curPtY + steeps[i + 2].y,
-                curPtX, curPtY);
-        }
-        context.stroke();
-        context.closePath();
-    }
+function vec3ToString(vec) {
+    return (`${vec.x},${vec.y},${vec.z}`);
 }
 
-
-function createLineBetweenSteps(steeps) {
-    return (x, y) => {
-
-        context.moveTo(0, 0);
-        let curPtX = x;
-        let curPtY = y;
-        context.beginPath();
-        context.lineWidth = "1";
-        //context.strokeStyle = "green";
-        context.strokeStyle = getMovingRainbowXGradient(0, widdth);
-        context.moveTo(curPtX, curPtY);
-        steeps.forEach(step => {
-            curPtX += step.x;
-            curPtY += step.y;
-            context.lineTo(curPtX, curPtY);
-        });
-        context.stroke();
-        context.closePath();
-    }
-}

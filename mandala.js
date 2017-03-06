@@ -1,5 +1,7 @@
 var scene, camera, renderer, cameraControls;
 const bubble_radius = 300;
+const bubble_points_lat = 15;
+const bubble_points_long = 15;
 
 var render = function () {
     requestAnimationFrame(render);
@@ -10,21 +12,21 @@ var render = function () {
 function init() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    renderer = new THREE.WebGLRenderer();
+    renderer = new THREE.WebGLRenderer({ antialias: true });
     cameraControls = new THREE.OrbitControls(camera, renderer.domElement);
     cameraControls.addEventListener('change', function () { renderer.render(scene, camera); });
+    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 1);
     document.body.appendChild(renderer.domElement);
-
-    var bubble_radius = 100;
 
     createScene();
 }
 
 function createScene() {
-    createGeometries();
     setupLighting();
     setupCamera();
+    createGeometries();
 }
 
 function updateScene() {
@@ -43,23 +45,23 @@ function createGeometries() {
 
 
     let curve = new THREE.CubicBezierCurve3(
-        new THREE.Vector3( -300, 0, 0 ),
-        new THREE.Vector3( -200, 100, 0 ),
-        new THREE.Vector3( 20, -80, 0 ),
-        new THREE.Vector3( 300, 0, 0 )
+        new THREE.Vector3(-300, 0, 0),
+        new THREE.Vector3(-200, 100, 0),
+        new THREE.Vector3(20, -80, 0),
+        new THREE.Vector3(300, 0, 0)
     );
 
-    let geometryManual = new THREE.TubeGeometry( curve, 50, 25, 8, false );
+    let geometryManual = new THREE.TubeGeometry(curve, 50, 25, 8, false);
     //geometryManual.vertices = curve.getPoints( 50 );
 
-    let material = new THREE.MeshLambertMaterial( { color : 0xff0000 } );
+    let material = new THREE.MeshLambertMaterial({ color: 0xffff00 });
     scene.add(new THREE.Mesh(geometryManual, material));
 
     // Create the final object to add to the scene
     // let curveObject = new THREE.Line( geometryManual, material );
     // scene.add(curveObject);
-    
-    
+
+
     // let squiggleLines = createCurves();
     // createSquiggleTubes(squiggleLines).forEach((tube) => {
     //     scene.add(new THREE.Mesh(
@@ -68,14 +70,19 @@ function createGeometries() {
     //     ));
     // });
 
-    let geometry = new THREE.SphereBufferGeometry(bubble_radius, 100, 100);
-    let wireframe = new THREE.WireframeGeometry(geometry);
-    let line = new THREE.LineSegments(wireframe);
-    line.material.depthTest = false;
-    line.material.opacity = 0.25;
-    line.material.transparent = true;
+    let bubbleGeometry = new THREE.SphereBufferGeometry(bubble_radius, bubble_points_lat, bubble_points_long);
+    let bubbleWireframe = new THREE.WireframeGeometry(bubbleGeometry);
+    let bubbleWireFrameLines = new THREE.LineSegments(bubbleWireframe);
+    let bubbleWireFrameMaterial = new THREE.MeshLambertMaterial({
+        depthTest: false,
+        opacity: 0.25,
+        transparent: true
+    });
+    // }).depthTest = false;
+    // bubbleWireFrameLines.material.opacity = 0.25;
+    // bubbleWireFrameLines.material.transparent = true;
 
-    scene.add(line);
+    //scene.add(bubbleWireFrameLines, bubbleWireFrameMaterial);
 
     // scene.add(
     //     new THREE.Mesh(
@@ -95,11 +102,23 @@ function updateGeometries() {
 
 
 function setupLighting() {
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    let light = new THREE.PointLight(0xffffff, 1, 0);
+    light.position.set(0, 400, 0);
+    scene.add(light);
 
-    let pointLight = new THREE.PointLight(0xaaaaaa, 0.6);
-    pointLight.position.set(300, 300, 300);
-    scene.add(pointLight);
+    let light2 = new THREE.PointLight(0xffffff, 1, 0);
+    light2.position.set(100, 400, 100);
+    scene.add(light2);
+
+    let light3 = new THREE.PointLight(0xffffff, 1, 0);
+    light3.position.set(-100, -400, -100);
+    scene.add(light3);
+
+    //scene.add(new THREE.AmbientLight(0xaaaaaa, 0.7));
+
+    // let pointLight = new THREE.PointLight(0xaaaaaa, 0.6);
+    // pointLight.position.set(300, 300, 300);
+    // scene.add(pointLight);
 }
 
 function updateLighting() {
@@ -155,7 +174,7 @@ function getPointsAcrossRegion(
     currentPoint.add(currentDirection);
     steps.push(currentPoint);
     do {
-        
+
         steps.push(calculateNextStep(currentPoint, currentDirection, steps));
         currentPoint.add(steps[steps.length - 1]);
     }
@@ -212,24 +231,22 @@ function createCurves() {
     //herehere - need to create squiggle from one point on sphere and then the draw should put that everywhere. 
     //let phi, theta, normal, x,y,z;
     const twoPI = Math.PI * 2.0;
-    const latitudePoints = 4;
-    const longitudePoints = 30;
     let curves = [];
 
-    for (i = 1; i <= longitudePoints; i++) {
-        for (j = 1; j <= latitudePoints; j++) {
+    for (i = 1; i <= bubble_points_long; i++) {
+        for (j = 1; j <= bubble_points_lat; j++) {
             // get surface normal
             let theta = twoPI / i;
             let phi = twoPI / j;
             let x = bubble_radius * Math.sin(theta) * Math.cos(phi);
             let y = bubble_radius * Math.sin(theta) * Math.sin(phi);
             let z = bubble_radius * Math.cos(theta);
-            let pt = new THREE.Vector3(x,y,z);
+            let pt = new THREE.Vector3(x, y, z);
             let normal = new THREE.Vector3(x, y, z).normalize().multiplyScalar(-1);
             console.log(`normal = ${vec3ToString(normal)}`);
             //let curve = new THREE.LineCurve(pt, pt.clone().addVectors(pt, normal.multiplyScalar(2 * bubble_radius)));
             //curves.push(curve);
-            
+
             let steps = getPointsAcrossRegion(new THREE.Vector3(x, y, z), normal, (point) => point.length() < bubble_radius);
             if (steps.length > 1) {
                 let squiggle = createCurveFromStepsAndStartPoint(new THREE.Vector3(x, y, z), steps);

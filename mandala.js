@@ -44,24 +44,24 @@ function createGeometries() {
     //     )
     // );
 
-    let curve = new THREE.CubicBezierCurve3(
-        new THREE.Vector3(-300, 0, 0),
-        new THREE.Vector3(-200, 100, 0),
-        new THREE.Vector3(20, -80, 0),
-        new THREE.Vector3(300, 0, 0)
-    );
+    // let curve = new THREE.CubicBezierCurve3(
+    //     new THREE.Vector3(-300, 0, 0),
+    //     new THREE.Vector3(-200, 100, 0),
+    //     new THREE.Vector3(20, -80, 0),
+    //     new THREE.Vector3(300, 0, 0)
+    // );
 
-    let geometryManual = new THREE.TubeGeometry(curve, 50, 25, 8, false);
-    //geometryManual.vertices = curve.getPoints( 50 );
+    // let geometryManual = new THREE.TubeGeometry(curve, 50, 25, 8, false);
+    // //geometryManual.vertices = curve.getPoints( 50 );
 
-    let material = new THREE.MeshLambertMaterial({ color: 0xffff00 });
-    scene.add(new THREE.Mesh(geometryManual, material));
+    // let material = new THREE.MeshLambertMaterial({ color: 0xffff00 });
+    // scene.add(new THREE.Mesh(geometryManual, material));
 
     // Create the final object to add to the scene
     // let curveObject = new THREE.Line( geometryManual, material );
     // scene.add(curveObject);
 
-
+    let material = new THREE.MeshLambertMaterial({ color: 0xaaaa00 });
     let squiggleLines = createCurves();
     createSquiggleTubes(squiggleLines).forEach((tube) => {
         scene.add(new THREE.Mesh(
@@ -117,7 +117,7 @@ function setupLighting() {
     light3.position.set(-100, -400, -100);
     scene.add(light3);
 
-    scene.add(new THREE.AmbientLight(0xff9999, 0.7));
+    //scene.add(new THREE.AmbientLight(0xff9999, 0.7));
 
     // let pointLight = new THREE.PointLight(0xaaaaaa, 0.6);
     // pointLight.position.set(300, 300, 300);

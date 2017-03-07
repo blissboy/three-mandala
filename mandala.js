@@ -1,7 +1,7 @@
 var scene, camera, renderer, cameraControls;
 const bubble_radius = 300;
-const bubble_points_lat = 3;
-const bubble_points_long = 15;
+const bubble_points_lat = 8;
+const bubble_points_long = 9;
 
 var render = function () {
     requestAnimationFrame(render);
@@ -63,24 +63,22 @@ function createGeometries() {
 
 function updateGeometries() {
     scene.children.forEach(c => {
-        c.rotation.x += 0.01;
-        c.rotation.y += 0.02;
+        c.rotation.x += 0.005;
+        c.rotation.y += 0.01;
     });
 }
 
 
 function setupLighting() {
-    let light = new THREE.PointLight(0xff0000, 1, 0);
+    let light = new THREE.PointLight(0xffffff, 1, 0);
     light.position.set(0, 400, 0);
     scene.add(light);
 
-    let light2 = new THREE.PointLight(0x00ff00, 1, 0);
-    //light2.position.set(100, 400, 100);
+    let light2 = new THREE.PointLight(0xffffff, 1, 0);
     light2.position.set(400, 0,0);
     scene.add(light2);
 
-    let light3 = new THREE.PointLight(0x0000ff, 1, 0);
-    //light3.position.set(-100, -400, -100);
+    let light3 = new THREE.PointLight(0xff00ff, 1, 0);
     light3.position.set(0, 0, 400);
     scene.add(light3);
 
@@ -160,7 +158,7 @@ function createCurveFromStepsAndStartPoint(startPoint, steps) {
  */
 function createSquiggleTubes(curves) {
     return curves.map((curve) => {
-        let tube = new THREE.TubeGeometry(curve, 64, 5, 8, false);
+        let tube = new THREE.TubeGeometry(curve, 64, 5, 18, false);
         return tube;
     });
 }
@@ -171,25 +169,23 @@ function createSquiggleTubes(curves) {
  * @returns array of Curves
  */
 function createCurves() {
-    //herehere - need to create squiggle from one point on sphere and then the draw should put that everywhere. 
-    //let phi, theta, normal, x,y,z;
+    let phi, theta, normal, x,y,z, pt, steps;
     const twoPI = Math.PI * 2.0;
     let curves = [];
 
     for (i = 0; i < bubble_points_long; i++) {
         for (j = 0; j < bubble_points_lat; j++) {
             // get surface normal
-            let theta = twoPI / i;
-            let phi = twoPI / j;
-            let x = bubble_radius * Math.sin(theta) * Math.cos(phi);
-            let y = bubble_radius * Math.sin(theta) * Math.sin(phi);
-            let z = bubble_radius * Math.cos(theta);
-            let pt = new THREE.Vector3(x, y, z);
-            let normal = new THREE.Vector3(x, y, z).normalize().multiplyScalar(-1);
-            let steps = getPointsAcrossRegion(new THREE.Vector3(x, y, z), normal, (point) => point.length() < bubble_radius);
+            theta = twoPI / i;
+            phi = twoPI / j;
+            x = bubble_radius * Math.sin(theta) * Math.cos(phi);
+            y = bubble_radius * Math.sin(theta) * Math.sin(phi);
+            z = bubble_radius * Math.cos(theta);
+            pt = new THREE.Vector3(x, y, z);
+            normal = new THREE.Vector3(x, y, z).normalize().multiplyScalar(-1);
+            steps = getPointsAcrossRegion(new THREE.Vector3(x, y, z), normal, (point) => point.length() < bubble_radius);
             if (steps.length > 1) {
-                let squiggle = createCurveFromStepsAndStartPoint(new THREE.Vector3(x, y, z), steps);
-                curves.push(squiggle);
+                curves.push(createCurveFromStepsAndStartPoint(new THREE.Vector3(x, y, z), steps));
             }
         }
     }

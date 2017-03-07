@@ -24,6 +24,7 @@ function init() {
 }
 
 function createScene() {
+    //testScope(new THREE.Vector3(100,0,0));
     setupLighting();
     setupCamera();
     createGeometries();
@@ -36,13 +37,12 @@ function updateScene() {
 }
 
 function createGeometries() {
-    scene.add(
-        new THREE.Mesh(
-            new THREE.BoxGeometry(1, 1, 1),
-            new THREE.MeshLambertMaterial({ color: 0xfd59d7 })
-        )
-    );
-
+    // scene.add(
+    //     new THREE.Mesh(
+    //         new THREE.BoxGeometry(1, 1, 1),
+    //         new THREE.MeshLambertMaterial({ color: 0xfd59d7 })
+    //     )
+    // );
 
     let curve = new THREE.CubicBezierCurve3(
         new THREE.Vector3(-300, 0, 0),
@@ -66,11 +66,14 @@ function createGeometries() {
     createSquiggleTubes(squiggleLines).forEach((tube) => {
         scene.add(new THREE.Mesh(
             tube,
-            new THREE.MeshLambertMaterial({ color: 0xfd59d7 })
+            material
         ));
     });
 
-    let bubbleGeometry = new THREE.SphereBufferGeometry(bubble_radius, bubble_points_lat, bubble_points_long);
+    let bubbleGeometry = new THREE.SphereBufferGeometry(
+        bubble_radius, 
+        bubble_points_lat > 10 ? bubble_points_lat : 10, 
+        bubble_points_long > 10 ? bubble_points_long : 10);
     let bubbleWireframe = new THREE.WireframeGeometry(bubbleGeometry);
     let bubbleWireFrameLines = new THREE.LineSegments(bubbleWireframe);
     let bubbleWireFrameMaterial = new THREE.MeshLambertMaterial({
@@ -82,7 +85,7 @@ function createGeometries() {
     // bubbleWireFrameLines.material.opacity = 0.25;
     // bubbleWireFrameLines.material.transparent = true;
 
-    //scene.add(bubbleWireFrameLines, bubbleWireFrameMaterial);
+    scene.add(bubbleWireFrameLines, bubbleWireFrameMaterial);
 
     // scene.add(
     //     new THREE.Mesh(
@@ -114,7 +117,7 @@ function setupLighting() {
     light3.position.set(-100, -400, -100);
     scene.add(light3);
 
-    //scene.add(new THREE.AmbientLight(0xaaaaaa, 0.7));
+    scene.add(new THREE.AmbientLight(0xff9999, 0.7));
 
     // let pointLight = new THREE.PointLight(0xaaaaaa, 0.6);
     // pointLight.position.set(300, 300, 300);
@@ -160,7 +163,7 @@ function getPointsAcrossRegion(
     startingDirection, //Vector3
     isPointStillInRegion,
     calculateNextStep = (location, direction, steps) => {
-        return (new THREE.Vector3(Math.random(), Math.random(), Math.random())).normalize();
+        return (new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1)).normalize();
         // // direction is a vec3
         // originalDirection = direction.clone();
         // originalDirection.normalize();
@@ -172,29 +175,61 @@ function getPointsAcrossRegion(
     let currentPoint = startingPoint.clone();
     let currentDirection = startingDirection.clone();
     currentPoint.add(currentDirection);
-    steps.push(currentPoint);
+    steps.push(currentPoint.clone());
     do {
-
-        steps.push(calculateNextStep(currentPoint, currentDirection, steps));
-        currentPoint.add(steps[steps.length - 1]);
+        let nextStep = calculateNextStep(currentPoint, currentDirection, steps);
+        currentPoint.add(nextStep.clone());
+        currentPoint.add(currentDirection);
+        steps.push(currentPoint.clone());
+        //steps.push(calculateNextStep(currentPoint, currentDirection, steps));
+        //currentPoint.add(steps[steps.length - 1]);
     }
     while (isPointStillInRegion(currentPoint));
 
-    console.log('***************************')
-    console.log('starting point ' + vec3ToString(startingPoint));
-    console.log('starting direction ' + vec3ToString(startingDirection));
-    console.log('Points:');
-    steps.forEach((pt) => { console.log(`\t ${vec3ToString(pt)}`) });
+    // console.log('***************************')
+    // console.log('starting point ' + vec3ToString(startingPoint));
+    // console.log('starting direction ' + vec3ToString(startingDirection));
+    // console.log('Points:');
+    // steps.forEach((pt) => { console.log(`\t ${vec3ToString(pt)}`) });
 
     return steps;
 }
 
-
+function testScope(point) {
+    let newPoint = point.clone();
+    let unitVector = new THREE.Vector3(1,0,0);
+    let points = [];
+    console.log(`newPoint=${vec3ToString(newPoint)}`);
+    points.push(newPoint.clone());
+    console.log(points);
+    console.log('points start------');
+    points.forEach((p) => {console.log(`\t${vec3ToString(p)}`)});
+    console.log('points end------');
+    //newPoint = newPoint.addVectors(newPoint, unitVector);
+    newPoint.add(unitVector);
+    console.log(`after adding unit vec, newPoint=${vec3ToString(newPoint)}`);
+    points.push(newPoint.clone());
+    console.log('points start------');
+    points.forEach((p) => {console.log(`\t${vec3ToString(p)}`)});
+    console.log('points end------');
+    newPoint.add(unitVector);
+    console.log(`after adding unit vec, newPoint=${vec3ToString(newPoint)}`);
+    points.push(newPoint.clone());
+    console.log(points);
+    console.log('points start------');
+    points.forEach((p) => {console.log(`\t${vec3ToString(p)}`)});
+    console.log('points end------');
+    point = new THREE.Vector3(0,1000,0);
+    console.log('points start------');
+    points.forEach((p) => {console.log(`\t${vec3ToString(p)}`)});
+    console.log('points end------');
+    
+}
 
 function createCurveFromStepsAndStartPoint(startPoint, steps) {
     let curPoint = startPoint.clone();
     let curvePoints = [];
-    curvePoints.push(startPoint);
+    //curvePoints.push(startPoint);
     //TODO: figure out why the map isn't working (commented below)
     for (let i = 0; i < steps.length; i++) {
         let newPoint = curPoint.clone();
@@ -209,7 +244,8 @@ function createCurveFromStepsAndStartPoint(startPoint, steps) {
     // });
     //let pts = steps.map((pt) => { curPoint.addVectors(curPoint, pt); return curPoint;} );
 
-    return new THREE.CatmullRomCurve3(curvePoints);
+    //return new THREE.CatmullRomCurve3(curvePoints);
+    return new THREE.CatmullRomCurve3(steps);
 }
 
 /**
@@ -233,8 +269,8 @@ function createCurves() {
     const twoPI = Math.PI * 2.0;
     let curves = [];
 
-    for (i = 1; i <= bubble_points_long; i++) {
-        for (j = 1; j <= bubble_points_lat; j++) {
+    for (i = 0; i < bubble_points_long; i++) {
+        for (j = 0; j < bubble_points_lat; j++) {
             // get surface normal
             let theta = twoPI / i;
             let phi = twoPI / j;
@@ -243,7 +279,7 @@ function createCurves() {
             let z = bubble_radius * Math.cos(theta);
             let pt = new THREE.Vector3(x, y, z);
             let normal = new THREE.Vector3(x, y, z).normalize().multiplyScalar(-1);
-            console.log(`normal = ${vec3ToString(normal)}`);
+            //console.log(`normal = ${vec3ToString(normal)}`);
             //let curve = new THREE.LineCurve(pt, pt.clone().addVectors(pt, normal.multiplyScalar(2 * bubble_radius)));
             //curves.push(curve);
 

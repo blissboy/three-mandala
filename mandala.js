@@ -37,7 +37,7 @@ function updateScene() {
 }
 
 function createGeometries() {
-    let material = new THREE.MeshLambertMaterial({ color: 0xaaaa00 });
+    let material = new THREE.MeshLambertMaterial({ color: 0x77cc44 });
     let squiggleLines = createCurves();
     createSquiggleTubes(squiggleLines).forEach((tube) => {
         scene.add(new THREE.Mesh(
@@ -75,11 +75,13 @@ function setupLighting() {
     scene.add(light);
 
     let light2 = new THREE.PointLight(0x00ff00, 1, 0);
-    light2.position.set(100, 400, 100);
+    //light2.position.set(100, 400, 100);
+    light2.position.set(400, 0,0);
     scene.add(light2);
 
     let light3 = new THREE.PointLight(0x0000ff, 1, 0);
-    light3.position.set(-100, -400, -100);
+    //light3.position.set(-100, -400, -100);
+    light3.position.set(0, 0, 400);
     scene.add(light3);
 
     //scene.add(new THREE.AmbientLight(0xff9999, 0.7));
@@ -184,7 +186,6 @@ function createCurves() {
             let z = bubble_radius * Math.cos(theta);
             let pt = new THREE.Vector3(x, y, z);
             let normal = new THREE.Vector3(x, y, z).normalize().multiplyScalar(-1);
-
             let steps = getPointsAcrossRegion(new THREE.Vector3(x, y, z), normal, (point) => point.length() < bubble_radius);
             if (steps.length > 1) {
                 let squiggle = createCurveFromStepsAndStartPoint(new THREE.Vector3(x, y, z), steps);

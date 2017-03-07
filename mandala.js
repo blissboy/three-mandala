@@ -37,7 +37,7 @@ function updateScene() {
 }
 
 function createGeometries() {
-    let material = new THREE.MeshLambertMaterial({ color: 0x77cc44 });
+    let material = new THREE.MeshLambertMaterial({ color: 0x22ccddd });
     let squiggleLines = createCurves();
     createSquiggleTubes(squiggleLines).forEach((tube) => {
         scene.add(new THREE.Mesh(
@@ -47,14 +47,14 @@ function createGeometries() {
     });
 
     let bubbleGeometry = new THREE.SphereBufferGeometry(
-        bubble_radius, 
-        bubble_points_lat > 10 ? bubble_points_lat : 10, 
+        bubble_radius,
+        bubble_points_lat > 10 ? bubble_points_lat : 10,
         bubble_points_long > 10 ? bubble_points_long : 10);
     let bubbleWireframe = new THREE.WireframeGeometry(bubbleGeometry);
     let bubbleWireFrameLines = new THREE.LineSegments(bubbleWireframe);
     let bubbleWireFrameMaterial = new THREE.MeshLambertMaterial({
         depthTest: false,
-        opacity: 0.25,
+        opacity: 0.85,
         transparent: true
     });
     scene.add(bubbleWireFrameLines, bubbleWireFrameMaterial);
@@ -62,23 +62,29 @@ function createGeometries() {
 }
 
 function updateGeometries() {
+    let rotX = 0.005;
+    let stepX = 0.0001;
+    let rotY = 0.001;
+    let stepY = 0.0001;
     scene.children.forEach(c => {
-        c.rotation.x += 0.005;
-        c.rotation.y += 0.01;
+        c.rotation.x += rotX;
+        c.rotation.y += rotY;
+        rotX += stepX;
+        rotY += stepY;
     });
 }
 
 
 function setupLighting() {
-    let light = new THREE.PointLight(0xffffff, 1, 0);
+    let light = new THREE.PointLight(0xffffff, .5, 0);
     light.position.set(0, 400, 0);
     scene.add(light);
 
-    let light2 = new THREE.PointLight(0xffffff, 1, 0);
-    light2.position.set(400, 0,0);
+    let light2 = new THREE.PointLight(0xffaaaa, .3, 0);
+    light2.position.set(400, 0, 0);
     scene.add(light2);
 
-    let light3 = new THREE.PointLight(0xff00ff, 1, 0);
+    let light3 = new THREE.PointLight(0xffffff, .1, 0);
     light3.position.set(0, 0, 400);
     scene.add(light3);
 
@@ -149,8 +155,8 @@ function getPointsAcrossRegion(
     return steps;
 }
 
-function createCurveFromStepsAndStartPoint(startPoint, steps) {
-    return new THREE.CatmullRomCurve3(steps);
+function createCurveFromPoints(points) {
+    return new THREE.CatmullRomCurve3(points);
 }
 
 /**
@@ -169,7 +175,7 @@ function createSquiggleTubes(curves) {
  * @returns array of Curves
  */
 function createCurves() {
-    let phi, theta, normal, x,y,z, pt, steps;
+    let phi, theta, normal, x, y, z, pt, steps;
     const twoPI = Math.PI * 2.0;
     let curves = [];
 
@@ -185,7 +191,7 @@ function createCurves() {
             normal = new THREE.Vector3(x, y, z).normalize().multiplyScalar(-1);
             steps = getPointsAcrossRegion(new THREE.Vector3(x, y, z), normal, (point) => point.length() < bubble_radius);
             if (steps.length > 1) {
-                curves.push(createCurveFromStepsAndStartPoint(new THREE.Vector3(x, y, z), steps));
+                curves.push(createCurveFromPoints(steps));
             }
         }
     }

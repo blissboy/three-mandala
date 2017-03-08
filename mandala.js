@@ -1,7 +1,15 @@
 var scene, camera, renderer, cameraControls;
-const bubble_radius = 300;
-const bubble_points_lat = 8;
-const bubble_points_long = 9;
+var values = {
+    bubble: {
+        radius: 300,
+        latitudePoints: 8,
+        longitudePoints: 9,
+        color: 0xff00ff
+    },
+    tubes: {
+        color: 0x25cd1a
+    }
+}
 
 var render = function () {
     requestAnimationFrame(render);
@@ -20,7 +28,20 @@ function init() {
     renderer.setClearColor(0x000000, 1);
     document.body.appendChild(renderer.domElement);
 
+    createGUI();
     createScene();
+}
+
+function createGUI() {
+    var gui = new dat.GUI();
+    gui.addColor(values.tubes, 'color').onChange(() => {
+        let tubes = scene.getObjectByName('tubeGroup');
+        if (tubes) {
+            tubes.children.forEach((tube) => {
+                tube.material.color.set(values.tubes.color);
+            });
+        }
+    });
 }
 
 function createScene() {
@@ -37,19 +58,23 @@ function updateScene() {
 }
 
 function createGeometries() {
-    let material = new THREE.MeshLambertMaterial({ color: 0x22ccddd });
+    let material = new THREE.MeshPhongMaterial({ color: values.tubes.color });
     let squiggleLines = createCurves();
+    let tubeGroup = new THREE.Group();
+    tubeGroup.name = 'tubeGroup';
     createSquiggleTubes(squiggleLines).forEach((tube) => {
-        scene.add(new THREE.Mesh(
+        tubeGroup.add(new THREE.Mesh(
             tube,
             material
         ));
     });
+    scene.add(tubeGroup);
 
     let bubbleGeometry = new THREE.SphereBufferGeometry(
-        bubble_radius,
-        bubble_points_lat > 10 ? bubble_points_lat : 10,
-        bubble_points_long > 10 ? bubble_points_long : 10);
+        values.bubble.radius,
+        values.bubble.latitudePoints > 10 ? values.bubble.latitudePoints : 10,
+        values.bubble.longitudePoints > 10 ? values.bubble.longitudePoints : 10);
+
     let bubbleWireframe = new THREE.WireframeGeometry(bubbleGeometry);
     let bubbleWireFrameLines = new THREE.LineSegments(bubbleWireframe);
     let bubbleWireFrameMaterial = new THREE.MeshLambertMaterial({
@@ -179,17 +204,17 @@ function createCurves() {
     const twoPI = Math.PI * 2.0;
     let curves = [];
 
-    for (i = 0; i < bubble_points_long; i++) {
-        for (j = 0; j < bubble_points_lat; j++) {
+    for (i = 0; i < values.bubble.longitudePoints; i++) {
+        for (j = 0; j < values.bubble.latitudePoints; j++) {
             // get surface normal
             theta = twoPI / i;
             phi = twoPI / j;
-            x = bubble_radius * Math.sin(theta) * Math.cos(phi);
-            y = bubble_radius * Math.sin(theta) * Math.sin(phi);
-            z = bubble_radius * Math.cos(theta);
+            x = values.bubble.radius * Math.sin(theta) * Math.cos(phi);
+            y = values.bubble.radius * Math.sin(theta) * Math.sin(phi);
+            z = values.bubble.radius * Math.cos(theta);
             pt = new THREE.Vector3(x, y, z);
             normal = new THREE.Vector3(x, y, z).normalize().multiplyScalar(-1);
-            steps = getPointsAcrossRegion(new THREE.Vector3(x, y, z), normal, (point) => point.length() < bubble_radius);
+            steps = getPointsAcrossRegion(new THREE.Vector3(x, y, z), normal, (point) => point.length() < values.bubble.radius);
             if (steps.length > 1) {
                 curves.push(createCurveFromPoints(steps));
             }

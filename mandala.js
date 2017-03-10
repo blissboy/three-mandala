@@ -1,4 +1,5 @@
 var scene, camera, renderer, cameraControls;
+var gui;
 var values = {
     bubble: {
         radius: 300,
@@ -8,7 +9,39 @@ var values = {
     },
     tubes: {
         color: 0x25cd1a
-    }
+    },
+    lights: [
+        {
+            intensity: 0.5,
+            color: 0xffffff,
+            position: {
+                x: 0,
+                y: 0,
+                z: 400
+            },
+            name: 'light1'
+        },
+        {
+            intensity: 0.3,
+            color: 0xffffff,
+            position: {
+                x: 0,
+                y: 400,
+                z: 0
+            },
+            name: 'light2'
+        },
+        {
+            intensity: 0.1,
+            color: 0xffffff,
+            position: {
+                x: 400,
+                y: 0,
+                z: 0
+            },
+            name: 'light3'
+        }
+    ]
 }
 
 var render = function () {
@@ -42,6 +75,16 @@ function createGUI() {
             });
         }
     });
+    values.lights.forEach((light) => {
+        let folder = gui.addFolder(light.name);
+        folder.addColor(light, 'color').onChange(() => {
+            scene.getObjectByName(light.name).color.set(light.color);
+        });
+        folder.add(light, 'intensity',0,1).onChange(() => {
+            scene.getObjectByName(light.name).intensity = light.intensity;
+        })
+    });
+
 }
 
 function createScene() {
@@ -101,23 +144,19 @@ function updateGeometries() {
 
 
 function setupLighting() {
-    let light = new THREE.PointLight(0xffffff, .5, 0);
-    light.position.set(0, 400, 0);
-    scene.add(light);
+    let lights = new THREE.Group();
+    lights.name = 'lights';
+    values.lights.forEach((light) => {
+        let lite = new THREE.PointLight(light.color, light.intensity);
+        lite.position.set(light.position.x, light.position.y, light.position.z);
+        lite.name = light.name;
+        lights.add(lite);
+    });
 
-    let light2 = new THREE.PointLight(0xffaaaa, .3, 0);
-    light2.position.set(400, 0, 0);
-    scene.add(light2);
-
-    let light3 = new THREE.PointLight(0xffffff, .1, 0);
-    light3.position.set(0, 0, 400);
-    scene.add(light3);
-
-    //scene.add(new THREE.AmbientLight(0xff9999, 0.7));
+    scene.add(lights);
 }
 
 function updateLighting() {
-
 }
 
 function setupCamera() {
@@ -125,7 +164,6 @@ function setupCamera() {
 }
 
 function updateCamera() {
-
 }
 
 /**

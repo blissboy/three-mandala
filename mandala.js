@@ -80,7 +80,7 @@ function createGUI() {
         folder.addColor(light, 'color').onChange(() => {
             scene.getObjectByName(light.name).color.set(light.color);
         });
-        folder.add(light, 'intensity',0,1).onChange(() => {
+        folder.add(light, 'intensity', 0, 1).onChange(() => {
             scene.getObjectByName(light.name).intensity = light.intensity;
         })
     });
@@ -113,17 +113,27 @@ function createGeometries() {
     });
     scene.add(tubeGroup);
 
+    // let ringGroup = new THREE.Group();
+    // ringGroup.name = 'ringGroup';
+    // createSquiggleRings(squiggleLines).forEach((ring) => {
+    //     ringGroup.add(new THREE.Mesh(
+    //         ring,
+    //         material
+    //     ));
+    // });
+    // scene.add(ringGroup);
+
     let bubbleGeometry = new THREE.SphereBufferGeometry(
         values.bubble.radius,
-        values.bubble.latitudePoints > 10 ? values.bubble.latitudePoints : 10,
-        values.bubble.longitudePoints > 10 ? values.bubble.longitudePoints : 10);
+        values.bubble.latitudePoints,
+        values.bubble.longitudePoints);
 
     let bubbleWireframe = new THREE.WireframeGeometry(bubbleGeometry);
     let bubbleWireFrameLines = new THREE.LineSegments(bubbleWireframe);
     let bubbleWireFrameMaterial = new THREE.MeshLambertMaterial({
-        depthTest: false,
-        opacity: 0.85,
-        transparent: true
+        depthTest: true,
+        opacity: 0.999,
+        transparent: false
     });
     scene.add(bubbleWireFrameLines, bubbleWireFrameMaterial);
 
@@ -134,14 +144,24 @@ function updateGeometries() {
     let stepX = 0.0001;
     let rotY = 0.001;
     let stepY = 0.0001;
+    let rotZ = 0.003;
     scene.children.forEach(c => {
         c.rotation.x += rotX;
         c.rotation.y += rotY;
         rotX += stepX;
         rotY += stepY;
     });
-}
 
+    scene.children.filter((c) => {
+        return c instanceof THREE.Group && c.name == 'ringGroup';
+    }).forEach((c) => {
+        c.children.forEach((ring) => {
+            ring.rotation.x += rotX;
+            ring.rotation.y += rotY;
+            ring.rotation.z += rotZ;
+        })
+    });
+}
 
 function setupLighting() {
     let lights = new THREE.Group();
@@ -221,6 +241,9 @@ function getPointsAcrossRegion(
 function createCurveFromPoints(points) {
     return new THREE.CatmullRomCurve3(points);
 }
+function createTorusFromPoints(points) {
+    return new THREE.CatmullRomCurve3(points);
+}
 
 /**
  * @param {*} squiggleLines 
@@ -230,6 +253,22 @@ function createSquiggleTubes(curves) {
         let tube = new THREE.TubeGeometry(curve, 64, 5, 18, false);
         return tube;
     });
+}
+/**
+ * @param {*} squiggleLines 
+ */
+function createSquiggleRings(curves) {
+    let rings = [];
+    const divideInto = 3;
+    curves.forEach((curve) => {
+        curve.getSpacedPoints(divideInto).forEach((pt) => {
+            let ring = new THREE.TorusGeometry(10, 3, 8, 6);
+            ring.translate(pt.x, pt.y, pt.z);
+            rings.push(ring);
+        })
+    });
+
+    return rings;
 }
 
 /**

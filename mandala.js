@@ -1,48 +1,55 @@
+const ambient_light_name='ambientLight';
 var scene, camera, renderer, cameraControls;
 var gui;
 var values = {
     bubble: {
         radius: 300,
-        latitudePoints: 8,
+        latitudePoints: 2,
         longitudePoints: 9,
         color: 0xff00ff
     },
     tubes: {
         color: 0x25cd1a
     },
-    lights: [
-        {
+    lights: {
+        pointLights: [
+            {
+                intensity: 0.5,
+                color: 0xffffff,
+                position: {
+                    x: 0,
+                    y: 0,
+                    z: 400
+                },
+                name: 'light1'
+            },
+            {
+                intensity: 0.3,
+                color: 0xffffff,
+                position: {
+                    x: 0,
+                    y: 400,
+                    z: 0
+                },
+                name: 'light2'
+            },
+            {
+                intensity: 0.1,
+                color: 0xffffff,
+                position: {
+                    x: 400,
+                    y: 0,
+                    z: 0
+                },
+                name: 'light3'
+            }
+        ],
+        ambientLight: {
             intensity: 0.5,
-            color: 0xffffff,
-            position: {
-                x: 0,
-                y: 0,
-                z: 400
-            },
-            name: 'light1'
-        },
-        {
-            intensity: 0.3,
-            color: 0xffffff,
-            position: {
-                x: 0,
-                y: 400,
-                z: 0
-            },
-            name: 'light2'
-        },
-        {
-            intensity: 0.1,
-            color: 0xffffff,
-            position: {
-                x: 400,
-                y: 0,
-                z: 0
-            },
-            name: 'light3'
+            color: 0xffffff
         }
-    ]
-}
+    }
+};
 
 var render = function () {
     requestAnimationFrame(render);
@@ -53,9 +60,11 @@ var render = function () {
 function init() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({antialias: true});
     cameraControls = new THREE.OrbitControls(camera, renderer.domElement);
-    cameraControls.addEventListener('change', function () { renderer.render(scene, camera); });
+    cameraControls.addEventListener('change', function () {
+        renderer.render(scene, camera);
+    });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x000000, 1);
@@ -75,7 +84,7 @@ function createGUI() {
             });
         }
     });
-    values.lights.forEach((light) => {
+    values.lights.pointLights.forEach((light) => {
         let folder = gui.addFolder(light.name);
         folder.addColor(light, 'color').onChange(() => {
             scene.getObjectByName(light.name).color.set(light.color);
@@ -84,6 +93,13 @@ function createGUI() {
             scene.getObjectByName(light.name).intensity = light.intensity;
         })
     });
+    let folder = gui.addFolder('ambient light');
+    folder.addColor(values.lights.ambientLight, 'color').onChange(() => {
+        scene.getObjectByName(ambient_light_name).color.set(values.lights.ambientLight.color);
+    });
+    folder.add(values.lights.ambientLight, 'intensity', 0, 1).onChange(() => {
+        scene.getObjectByName(ambient_light_name).intensity = values.lights.ambientLight.intensity;
+    })
 
 }
 
@@ -101,7 +117,7 @@ function updateScene() {
 }
 
 function createGeometries() {
-    let material = new THREE.MeshPhongMaterial({ color: values.tubes.color });
+    let material = new THREE.MeshPhongMaterial({color: values.tubes.color});
     let squiggleLines = createCurves();
     let tubeGroup = new THREE.Group();
     tubeGroup.name = 'tubeGroup';
@@ -166,12 +182,18 @@ function updateGeometries() {
 function setupLighting() {
     let lights = new THREE.Group();
     lights.name = 'lights';
-    values.lights.forEach((light) => {
+    values.lights.pointLights.forEach((light) => {
         let lite = new THREE.PointLight(light.color, light.intensity);
         lite.position.set(light.position.x, light.position.y, light.position.z);
         lite.name = light.name;
         lights.add(lite);
     });
+
+    let ambientLite = new THREE.AmbientLight(
+        values.lights.ambientLight.color,
+        values.lights.ambientLight.intensity);
+    ambientLite.name = ambient_light_name;
+    lights.add(ambientLite);
 
     scene.add(lights);
 }
@@ -187,10 +209,10 @@ function updateCamera() {
 }
 
 /**
- * Create a walk across a region. 
- * 
+ * Create a walk across a region.
+ *
  * @param startingPoint the point from which to start the walk
- * @param isPointStillInRegion a function that determines if the walk is still within the region. For example, 
+ * @param isPointStillInRegion a function that determines if the walk is still within the region. For example,
  * could pass a function like the following to determine if the point was outside the drawing window:
  *  (currentPointOfWalk) => {
  *      if ( currentPointOfWalk.x > window.innerWidth 
@@ -203,18 +225,17 @@ function updateCamera() {
  *      }
  * }
  * @param startingDirection a Vector3 indicating the direction that the path is facing at the start of the process
- * @param calculateNextStep function that will calculate the next step given the current location, direction, 
- * and array of steps as an input. 
- * 
- * @returns an array of steps (in the form {x,y,z}) indicating the steps. 
+ * @param calculateNextStep function that will calculate the next step given the current location, direction,
+ * and array of steps as an input.
+ *
+ * @returns an array of steps (in the form {x,y,z}) indicating the steps.
  */
-function getPointsAcrossRegion(
-    startingPoint,
-    startingDirection, //Vector3
-    isPointStillInRegion,
-    calculateNextStep = (location, direction, steps) => {
-        return (new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1)).normalize();
-    }) {
+function getPointsAcrossRegion(startingPoint,
+                               startingDirection, //Vector3
+                               isPointStillInRegion,
+                               calculateNextStep = (location, direction, steps) => {
+                                   return (new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1)).normalize();
+                               }) {
 
     let steps = [];
     let currentPoint = startingPoint.clone();
@@ -246,7 +267,7 @@ function createTorusFromPoints(points) {
 }
 
 /**
- * @param {*} squiggleLines 
+ * @param {*} squiggleLines
  */
 function createSquiggleTubes(curves) {
     return curves.map((curve) => {
@@ -255,7 +276,7 @@ function createSquiggleTubes(curves) {
     });
 }
 /**
- * @param {*} squiggleLines 
+ * @param {*} squiggleLines
  */
 function createSquiggleRings(curves) {
     let rings = [];
@@ -273,7 +294,7 @@ function createSquiggleRings(curves) {
 
 /**
  * create paths across the bubble
- * 
+ *
  * @returns array of Curves
  */
 function createCurves() {

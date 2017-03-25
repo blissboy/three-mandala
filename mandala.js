@@ -4,7 +4,7 @@ var gui;
 var values = {
     bubble: {
         radius: 300,
-        latitudePoints: 2,
+        latitudePoints: 9,
         longitudePoints: 9,
         color: 0xff00ff
     },
@@ -152,6 +152,62 @@ function createGeometries() {
         transparent: false
     });
     scene.add(bubbleWireFrameLines, bubbleWireFrameMaterial);
+
+    createBubble();
+
+
+
+}
+
+function createBubble() {
+
+    // let shader = THREE.FresnelShader;
+    // let uniforms = THREE.UniformsUtils.clone( shader.uniforms );
+    // uniforms[ "tCube" ].value = textureCube;
+    // let material = new THREE.ShaderMaterial( {
+    //     uniforms: uniforms,
+    //     vertexShader: shader.vertexShader,
+    //     fragmentShader: shader.fragmentShader
+    // } );
+
+
+
+
+
+
+
+
+
+
+
+
+    this.refractSphereCamera = new THREE.CubeCamera( 0.1, 5000, 512 );
+    scene.add( refractSphereCamera );
+    var fShader = THREE.FresnelShader;
+
+    var fresnelUniforms =
+        {
+            "mRefractionRatio": { type: "f", value: 1.02 },
+            "mFresnelBias": 	{ type: "f", value: 0.1 },
+            "mFresnelPower": 	{ type: "f", value: 2.0 },
+            "mFresnelScale": 	{ type: "f", value: 1.0 },
+            "tCube": 			{ type: "t", value: refractSphereCamera.renderTarget } //  textureCube }
+        };
+
+    // create custom material for the shader
+    var customMaterial = new THREE.ShaderMaterial(
+        {
+            uniforms: 		fresnelUniforms,
+            vertexShader:   fShader.vertexShader,
+            fragmentShader: fShader.fragmentShader
+        }   );
+
+    var sphereGeometry = new THREE.SphereGeometry( 100, 64, 32 );
+    this.sphere = new THREE.Mesh( sphereGeometry, customMaterial );
+    sphere.position.set(0, 50, 100);
+    scene.add(sphere);
+
+    refractSphereCamera.position = sphere.position;
 
 }
 

@@ -135,7 +135,7 @@ function getOscilatorTypes() {
 function createOscillators() {
     let oscillatorTypes = getOscilatorTypes();
 
-    oscillators = values.oscillators.map( (o) => {
+    oscillators = new Map(values.oscillators.map( (o) => {
         let oscType = oscillatorTypes.get(o.type);
         // set the map of params using the defaults
         let argMap = new Map(oscType.parameters.map(p => [p.name, p.default]));
@@ -147,7 +147,7 @@ function createOscillators() {
         });
 
         return [o.name, () => {oscType.value.apply(args)}];
-    });
+    }));
 }
 
 // function getOscillatorFromConfig(oscillatorConfig) {

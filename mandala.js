@@ -1,6 +1,11 @@
-const ambient_light_name='ambientLight';
+"use strict";
+const ambient_light_name = 'ambientLight';
 var scene, camera, renderer, cameraControls;
+var renderCount = 0;
 var gui;
+var oscillators;
+//var oscillatorTypes;
+
 var values = {
     bubble: {
         radius: 300,
@@ -48,10 +53,56 @@ var values = {
             intensity: 0.5,
             color: 0xffffff
         }
-    }
+    },
+    oscillatorTypes: [
+        {
+            name: 'sin',
+            parameters: [
+                {
+                    name: 'freq',
+                    description: 'frequency',
+                    default: () => {return 60;}
+                },
+                {
+                    name: 'count',
+                    description: 'Number of cycles so far',
+                    default: () => {return 0;}
+                }
+            ],
+            value: (freqFunc, countFunc) => {
+                if ( freqFunc() != 0 ) {
+                    return sin(countFunc() / freqFunc());
+                } else {
+                    console.error('dividing by zero thwarted');
+                    return 0;
+                }
+            }
+        }
+    ],
+    oscillators: [
+        {
+            name: 'sin60draw',
+            type: 'sin',
+            parameters: [
+                {
+                    name: 'freq',
+                    value: () => {return 60;}
+                },
+                {
+                    name: 'count',
+                    value: () => {
+                        "use strict";
+                        return renderCount;
+                    }
+                }
+            ]
+        }
+    ]
+
 };
 
 var render = function () {
+    renderCount++;
     requestAnimationFrame(render);
     updateScene();
     renderer.render(scene, camera);
@@ -70,10 +121,45 @@ function init() {
     renderer.setClearColor(0x000000, 1);
     document.body.appendChild(renderer.domElement);
 
+    createOscillators();
+
+
     createGUI();
     createScene();
 }
 
+function getOscilatorTypes() {
+    return new Map(values.oscillatorTypes.map( (osc) => [osc.name, osc]));
+}
+
+function createOscillators() {
+    let oscillatorTypes = getOscilatorTypes();
+
+    oscillators = values.oscillators.map( (o) => {
+        let oscType = oscillatorTypes.get(o.type);
+        // set the map of params using the defaults
+        let argMap = new Map(oscType.parameters.map(p => [p.name, p.default]));
+        // override the defaults where the osc instance did so
+        o.parameters.forEach(p => argMap.set(p.name, p.valueFunc));
+        // create the properly ordered arg list array
+        let args = oscType.parameters.map( p => {
+            return argMap.get(p.name);
+        });
+
+        return [o.name, () => {oscType.value.apply(args)}];
+    });
+}
+
+// function getOscillatorFromConfig(oscillatorConfig) {
+//     // get the osc type def
+//
+//     // for each parameter in osc type def, add param from osc def (or default)
+//
+//     // return
+//
+//     let val = o.
+//     return herehere look up apply and see if that's what we want
+// }
 function createGUI() {
     var gui = new dat.GUI();
     gui.addColor(values.tubes, 'color').onChange(() => {
@@ -154,7 +240,6 @@ function createGeometries() {
     scene.add(bubbleWireFrameLines, bubbleWireFrameMaterial);
 
     createBubble();
-
 
 
 }
@@ -288,9 +373,9 @@ function updateCamera() {
  * @param isPointStillInRegion a function that determines if the walk is still within the region. For example,
  * could pass a function like the following to determine if the point was outside the drawing window:
  *  (currentPointOfWalk) => {
- *      if ( currentPointOfWalk.x > window.innerWidth 
- *          || currentPointOfWalk.x < 0 
- *          || currentPointOfWalk.y > window.innerHeight 
+ *      if ( currentPointOfWalk.x > window.innerWidth
+ *          || currentPointOfWalk.x < 0
+ *          || currentPointOfWalk.y > window.innerHeight
  *          || currentPointOfWalk.y < 0 ) {
  *          return false;
  *      } else {
@@ -375,8 +460,8 @@ function createCurves() {
     const twoPI = Math.PI * 2.0;
     let curves = [];
 
-    for (i = 0; i < values.bubble.longitudePoints; i++) {
-        for (j = 0; j < values.bubble.latitudePoints; j++) {
+    for (let i = 0; i < values.bubble.longitudePoints; i++) {
+        for (let j = 0; j < values.bubble.latitudePoints; j++) {
             // get surface normal
             theta = twoPI / i;
             phi = twoPI / j;

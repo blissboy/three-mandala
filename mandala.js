@@ -69,9 +69,9 @@ var values = {
                     default: () => {return 0;}
                 }
             ],
-            value: (freqFunc, countFunc) => {
-                if ( freqFunc() != 0 ) {
-                    return sin(countFunc() / freqFunc());
+            value: (freq, count) => {
+                if ( freq() != 0 ) {
+                    return Math.sin(count() / freq());
                 } else {
                     console.error('dividing by zero thwarted');
                     return 0;
@@ -86,11 +86,11 @@ var values = {
             parameters: [
                 {
                     name: 'freq',
-                    value: () => {return 60;}
+                    valueFunc: () => {return 60;}
                 },
                 {
                     name: 'count',
-                    value: () => {
+                    valueFunc: () => {
                         "use strict";
                         return renderCount;
                     }
@@ -146,7 +146,7 @@ function createOscillators() {
             return argMap.get(p.name);
         });
 
-        return [o.name, () => {oscType.value.apply(args)}];
+        return [o.name, () => {oscType.value.apply(this, args)}];
     }));
 }
 
@@ -313,6 +313,14 @@ function getBubbleTexture() {
 
 
 function updateGeometries() {
+
+    if ( renderCount > 100) {
+        let oscFn = oscillators.get('sin60draw');
+        console.log(oscFn);
+        let woo = oscFn();
+        console.log(woo);
+    }
+
     let rotX = 0.005;
     let stepX = 0.0001;
     let rotY = 0.001;

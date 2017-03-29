@@ -1,0 +1,38 @@
+<html>
+
+<head>
+    <title>My first three.js app</title>
+    <style>
+        body {
+            margin: 0;
+        }
+
+
+        canvas {
+            width: 100%;
+            height: 100%
+        }
+    </style>
+</head>
+
+<body>
+    <script src="oscil-explain.js"></script>
+    <script>
+        function awayWeGo() {
+            setTimeout(function(){
+                console.log('render');
+                render();
+                awayWeGo();
+            }, 100);
+        }
+
+        init();
+        awayWeGo();
+//        render();
+//        while( 1==1) {
+//            render();
+//        }
+    </script>
+</body>
+
+</html>

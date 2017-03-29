@@ -59,7 +59,7 @@ var render = function () {
 
 function init() {
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
     renderer = new THREE.WebGLRenderer({antialias: true});
     cameraControls = new THREE.OrbitControls(camera, renderer.domElement);
     cameraControls.addEventListener('change', function () {
@@ -161,14 +161,21 @@ function createGeometries() {
 
 function createBubble() {
 
-    // let shader = THREE.FresnelShader;
-    // let uniforms = THREE.UniformsUtils.clone( shader.uniforms );
-    // uniforms[ "tCube" ].value = textureCube;
-    // let material = new THREE.ShaderMaterial( {
-    //     uniforms: uniforms,
-    //     vertexShader: shader.vertexShader,
-    //     fragmentShader: shader.fragmentShader
-    // } );
+    let shader = THREE.FresnelShader;
+    let uniforms = THREE.UniformsUtils.clone( shader.uniforms );
+    uniforms[ "tCube" ].value = getBubbleTexture();
+    let material = new THREE.ShaderMaterial( {
+        uniforms: uniforms,
+        vertexShader: shader.vertexShader,
+        fragmentShader: shader.fragmentShader
+    } );
+
+    let bubbleGeometry = new THREE.SphereGeometry( 100, 64, 32 );
+    let bubble = new THREE.Mesh( bubbleGeometry, material );
+    bubble.name = 'bubble';
+    //sphere.position.set(0, 50, 100);
+    //scene.background = getBubbleTexture();
+    scene.add(bubble);
 
 
 
@@ -180,36 +187,45 @@ function createBubble() {
 
 
 
-
-    this.refractSphereCamera = new THREE.CubeCamera( 0.1, 5000, 512 );
-    scene.add( refractSphereCamera );
-    var fShader = THREE.FresnelShader;
-
-    var fresnelUniforms =
-        {
-            "mRefractionRatio": { type: "f", value: 1.02 },
-            "mFresnelBias": 	{ type: "f", value: 0.1 },
-            "mFresnelPower": 	{ type: "f", value: 2.0 },
-            "mFresnelScale": 	{ type: "f", value: 1.0 },
-            "tCube": 			{ type: "t", value: refractSphereCamera.renderTarget } //  textureCube }
-        };
-
-    // create custom material for the shader
-    var customMaterial = new THREE.ShaderMaterial(
-        {
-            uniforms: 		fresnelUniforms,
-            vertexShader:   fShader.vertexShader,
-            fragmentShader: fShader.fragmentShader
-        }   );
-
-    var sphereGeometry = new THREE.SphereGeometry( 100, 64, 32 );
-    this.sphere = new THREE.Mesh( sphereGeometry, customMaterial );
-    sphere.position.set(0, 50, 100);
-    scene.add(sphere);
-
-    refractSphereCamera.position = sphere.position;
+    // this.refractSphereCamera = new THREE.CubeCamera( 0.1, 5000, 512 );
+    // scene.add( refractSphereCamera );
+    // var fShader = THREE.FresnelShader;
+    //
+    // var fresnelUniforms =
+    //     {
+    //         "mRefractionRatio": { type: "f", value: 1.02 },
+    //         "mFresnelBias": 	{ type: "f", value: 0.1 },
+    //         "mFresnelPower": 	{ type: "f", value: 2.0 },
+    //         "mFresnelScale": 	{ type: "f", value: 1.0 },
+    //         "tCube": 			{ type: "t", value: refractSphereCamera.renderTarget } //  textureCube }
+    //     };
+    //
+    // // create custom material for the shader
+    // var customMaterial = new THREE.ShaderMaterial(
+    //     {
+    //         uniforms: 		fresnelUniforms,
+    //         vertexShader:   fShader.vertexShader,
+    //         fragmentShader: fShader.fragmentShader
+    //     }   );
+    //
+    // var sphereGeometry = new THREE.SphereGeometry( 100, 64, 32 );
+    // this.sphere = new THREE.Mesh( sphereGeometry, customMaterial );
+    // sphere.position.set(0, 50, 100);
+    // scene.add(sphere);
+    //
+    // refractSphereCamera.position = sphere.position;
 
 }
+
+function getBubbleTexture() {
+    let textureImage = 'images/RedSquare_Tuthill_1024.jpg';
+    let urls = Array(6).fill(textureImage);
+    let textureCube = new THREE.CubeTextureLoader().load( urls );
+    textureCube.format = THREE.RGBFormat;
+
+    return textureCube;
+}
+
 
 function updateGeometries() {
     let rotX = 0.005;
@@ -217,22 +233,23 @@ function updateGeometries() {
     let rotY = 0.001;
     let stepY = 0.0001;
     let rotZ = 0.003;
-    scene.children.forEach(c => {
+    scene.children.filter(c => {
+        return c.name !== 'bubble'}).forEach(c => {
         c.rotation.x += rotX;
         c.rotation.y += rotY;
         rotX += stepX;
         rotY += stepY;
     });
 
-    scene.children.filter((c) => {
-        return c instanceof THREE.Group && c.name == 'ringGroup';
-    }).forEach((c) => {
-        c.children.forEach((ring) => {
-            ring.rotation.x += rotX;
-            ring.rotation.y += rotY;
-            ring.rotation.z += rotZ;
-        })
-    });
+    // scene.children.filter((c) => {
+    //     return c instanceof THREE.Group && c.name == 'ringGroup';
+    // }).forEach((c) => {
+    //     c.children.forEach((ring) => {
+    //         ring.rotation.x += rotX;
+    //         ring.rotation.y += rotY;
+    //         ring.rotation.z += rotZ;
+    //     })
+    // });
 }
 
 function setupLighting() {

@@ -14,7 +14,21 @@ var values = {
         color: 0xff00ff
     },
     tubes: {
-        color: 0xeeeeee
+        controlType: 'static',
+        static: {
+            color: 0xeeeeee
+        },
+        dynamic: {
+            oscillator: 'sin60draw',
+            color: {
+                rMin:0,
+                rMax:255,
+                gMin:0,
+                gMax:255,
+                bMin:0,
+                bMax:255
+            }
+        }
     },
     lights: {
         pointLights: [
@@ -177,14 +191,31 @@ function createOscillators() {
 
 function createGUI() {
     var gui = new dat.GUI();
-    gui.addColor(values.tubes, 'color').onChange(() => {
+
+    // tube color - folder w/ a static color, or oscil + ranges for HSB/RGB
+    let tubeFolder = gui.addFolder('tubes');
+    let tubes = {
+        controlType: 'static',
+        color: 0xeeeeee
+    };
+    tubeFolder.add(values.tubes, 'controlType', ['static', 'dynamic']).onChange( () => {
+        tubeFolder.visible = false;
+    });
+
+    let tubeStaticFolder = tubeFolder.addFolder('static');
+    tubeStaticFolder.addColor(values.tubes.static, 'color').onChange(() => {
         let tubes = scene.getObjectByName('tubeGroup');
         if (tubes) {
             tubes.children.forEach((tube) => {
-                tube.material.color.set(values.tubes.color);
+                tube.material.color.set(values.tubes.static.color);
             });
         }
     });
+
+    let tubeDynamicFolder = tubeFolder.addFolder('dynamic');
+    tubeDynamicFolder.add(values.tubes.dynamic, 'oscillator', Array.from(oscillators.keys));
+
+
     values.lights.pointLights.forEach((light) => {
         let folder = gui.addFolder(light.name);
         folder.addColor(light, 'color').onChange(() => {
@@ -218,7 +249,7 @@ function updateScene() {
 }
 
 function createGeometries() {
-    let material = new THREE.MeshPhongMaterial({color: values.tubes.color});
+    let material = new THREE.MeshPhongMaterial({color: values.tubes.static.color});
     let squiggleLines = createCurves();
     let tubeGroup = new THREE.Group();
     tubeGroup.name = 'tubeGroup';

@@ -4,7 +4,7 @@ var scene, camera, renderer, cameraControls;
 var renderCount = 0;
 var gui;
 var oscillators;
-//var oscillatorTypes;
+var dynamicValues = new Map();
 
 var values = {
     bubble: {
@@ -255,7 +255,20 @@ function createGeometries() {
     });
     let bigBubble = new THREE.Mesh(bubbleWireframe, bubbleWireFrameMaterial);
     bigBubble.name = 'bigBubble';
+
     scene.add(bigBubble);
+
+    let calc = {
+        evaluate: () => {
+            bigBubble.material.color.set(
+                `rgb(${Math.abs(Math.round(oscillators.get("sin60draw")() * 100))}%, 
+                 ${Math.abs(Math.round(oscillators.get("sin30draw")() * 100))}%, 
+                 ${Math.abs(Math.round(oscillators.get("sin20draw")() * 100))}%)`
+            )
+        }
+    }
+
+    dynamicValues.set('bigBubble.material.color', calc);
 
     createBubble();
 
@@ -341,12 +354,7 @@ function updateGeometries() {
         rotY += stepY;
     });
 
-    let bubble = scene.getObjectByName('bigBubble');
-    //bubble.material.color.set('rgb(23%, 45%, 64%)');
-    //let newColor = `rgb(${oscillators.get("sin60draw")() * 100}%, ${oscillators.get("sin30draw")() * 100}%, ${oscillators.get("sin20draw")() * 100}%)`;
-    //bubble.material.color.set(newColor);
-    bubble.material.color.set(`rgb(${Math.abs(Math.round(oscillators.get("sin60draw")() * 100))}%, ${Math.abs(Math.round(oscillators.get("sin30draw")() * 100))}%, ${Math.abs(Math.round(oscillators.get("sin20draw")() * 100))}%)`);
-//    bubble.material.color.set(oscillators.get('sin60osc')());
+    dynamicValues.forEach( (dv) => dv.evaluate());
 
 }
 

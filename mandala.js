@@ -9,8 +9,8 @@ var oscillators;
 var values = {
     bubble: {
         radius: 300,
-        latitudePoints: 9,
-        longitudePoints: 9,
+        latitudePoints: 20,
+        longitudePoints: 22,
         color: 0xff00ff
     },
     tubes: {
@@ -87,6 +87,34 @@ var values = {
                 {
                     name: 'freq',
                     valueFunc: () => 60
+                },
+                {
+                    name: 'count',
+                    valueFunc: () => renderCount
+                }
+            ]
+        },
+        {
+            name: 'sin30draw',
+            type: 'sin',
+            parameters: [
+                {
+                    name: 'freq',
+                    valueFunc: () => 30
+                },
+                {
+                    name: 'count',
+                    valueFunc: () => renderCount
+                }
+            ]
+        },
+        {
+            name: 'sin20draw',
+            type: 'sin',
+            parameters: [
+                {
+                    name: 'freq',
+                    valueFunc: () => 20
                 },
                 {
                     name: 'count',
@@ -222,9 +250,12 @@ function createGeometries() {
     let bubbleWireFrameMaterial = new THREE.MeshLambertMaterial({
         depthTest: true,
         opacity: 0.8,
-        transparent: true
+        transparent: true,
+        color: 0xaaaaaa
     });
-    scene.add(new THREE.Mesh(bubbleWireframe, bubbleWireFrameMaterial));
+    let bigBubble = new THREE.Mesh(bubbleWireframe, bubbleWireFrameMaterial);
+    bigBubble.name = 'bigBubble';
+    scene.add(bigBubble);
 
     createBubble();
 
@@ -309,6 +340,14 @@ function updateGeometries() {
         rotX += stepX;
         rotY += stepY;
     });
+
+    let bubble = scene.getObjectByName('bigBubble');
+    //bubble.material.color.set('rgb(23%, 45%, 64%)');
+    //let newColor = `rgb(${oscillators.get("sin60draw")() * 100}%, ${oscillators.get("sin30draw")() * 100}%, ${oscillators.get("sin20draw")() * 100}%)`;
+    //bubble.material.color.set(newColor);
+    bubble.material.color.set(`rgb(${Math.abs(Math.round(oscillators.get("sin60draw")() * 100))}%, ${Math.abs(Math.round(oscillators.get("sin30draw")() * 100))}%, ${Math.abs(Math.round(oscillators.get("sin20draw")() * 100))}%)`);
+//    bubble.material.color.set(oscillators.get('sin60osc')());
+
 }
 
 function setupLighting() {

@@ -14,13 +14,13 @@ var values = {
         color: 0xff00ff
     },
     tubes: {
-        color: 0x25cd1a
+        color: 0xeeeeee
     },
     lights: {
         pointLights: [
             {
                 intensity: 0.5,
-                color: 0xffffff,
+                color: 0x0000ff,
                 position: {
                     x: 0,
                     y: 0,
@@ -29,8 +29,8 @@ var values = {
                 name: 'light1'
             },
             {
-                intensity: 0.3,
-                color: 0xffffff,
+                intensity: 0.5,
+                color: 0xff0000,
                 position: {
                     x: 0,
                     y: 400,
@@ -39,8 +39,8 @@ var values = {
                 name: 'light2'
             },
             {
-                intensity: 0.1,
-                color: 0xffffff,
+                intensity: 0.5,
+                color: 0x00ff00,
                 position: {
                     x: 400,
                     y: 0,
@@ -50,7 +50,7 @@ var values = {
             }
         ],
         ambientLight: {
-            intensity: 0.5,
+            intensity: 0.2,
             color: 0xffffff
         }
     },
@@ -373,7 +373,11 @@ function updateLighting() {
 }
 
 function setupCamera() {
-    camera.position.z = 300;
+    camera.position.z = 600;
+    camera.position.x = 200;
+    camera.position.y = -12;
+    cameraControls.target = new THREE.Vector3(0,0,0);
+    cameraControls.update();
 }
 
 function updateCamera() {

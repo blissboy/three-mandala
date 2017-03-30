@@ -86,14 +86,11 @@ var values = {
             parameters: [
                 {
                     name: 'freq',
-                    valueFunc: () => {return 60;}
+                    valueFunc: () => 60
                 },
                 {
                     name: 'count',
-                    valueFunc: () => {
-                        "use strict";
-                        return renderCount;
-                    }
+                    valueFunc: () => renderCount
                 }
             ]
         }
@@ -146,20 +143,10 @@ function createOscillators() {
             return argMap.get(p.name);
         });
 
-        return [o.name, () => {oscType.value.apply(this, args)}];
+        return [o.name, () => oscType.value.apply(this, args)];
     }));
 }
 
-// function getOscillatorFromConfig(oscillatorConfig) {
-//     // get the osc type def
-//
-//     // for each parameter in osc type def, add param from osc def (or default)
-//
-//     // return
-//
-//     let val = o.
-//     return herehere look up apply and see if that's what we want
-// }
 function createGUI() {
     var gui = new dat.GUI();
     gui.addColor(values.tubes, 'color').onChange(() => {
@@ -234,10 +221,10 @@ function createGeometries() {
     let bubbleWireFrameLines = new THREE.LineSegments(bubbleWireframe);
     let bubbleWireFrameMaterial = new THREE.MeshLambertMaterial({
         depthTest: true,
-        opacity: 0.999,
-        transparent: false
+        opacity: 0.8,
+        transparent: true
     });
-    scene.add(bubbleWireFrameLines, bubbleWireFrameMaterial);
+    scene.add(new THREE.Mesh(bubbleWireframe, bubbleWireFrameMaterial));
 
     createBubble();
 
@@ -261,16 +248,6 @@ function createBubble() {
     //sphere.position.set(0, 50, 100);
     //scene.background = getBubbleTexture();
     scene.add(bubble);
-
-
-
-
-
-
-
-
-
-
 
     // this.refractSphereCamera = new THREE.CubeCamera( 0.1, 5000, 512 );
     // scene.add( refractSphereCamera );
@@ -314,35 +291,24 @@ function getBubbleTexture() {
 
 function updateGeometries() {
 
-    if ( renderCount > 100) {
-        let oscFn = oscillators.get('sin60draw');
-        console.log(oscFn);
-        let woo = oscFn();
-        console.log(woo);
-    }
+    // if ( renderCount > 100) {
+    //     let oscFn = oscillators.get('sin60draw');
+    //     console.log(oscFn);
+    //     let woo = oscFn();
+    //     console.log(woo);
+    // }
 
     let rotX = 0.005;
     let stepX = 0.0001;
     let rotY = 0.001;
     let stepY = 0.0001;
     let rotZ = 0.003;
-    scene.children.filter(c => {
-        return c.name !== 'bubble'}).forEach(c => {
+    scene.children.forEach(c => {
         c.rotation.x += rotX;
         c.rotation.y += rotY;
         rotX += stepX;
         rotY += stepY;
     });
-
-    // scene.children.filter((c) => {
-    //     return c instanceof THREE.Group && c.name == 'ringGroup';
-    // }).forEach((c) => {
-    //     c.children.forEach((ring) => {
-    //         ring.rotation.x += rotX;
-    //         ring.rotation.y += rotY;
-    //         ring.rotation.z += rotZ;
-    //     })
-    // });
 }
 
 function setupLighting() {

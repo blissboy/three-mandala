@@ -3,6 +3,9 @@ const ambient_light_name = 'ambientLight';
 var scene, camera, renderer, cameraControls;
 var renderCount = 0;
 var gui;
+
+var parentTubeFolder;
+
 var oscillators;
 var dynamicValues = new Map();
 
@@ -190,20 +193,19 @@ function createOscillators() {
 }
 
 function createGUI() {
-    var gui = new dat.GUI();
+    gui = new dat.GUI();
+
+    // create folder for tubes
+    // create folders for choosing static/dynamic, static color, and dynamic color
+    // on select of each, attach children of correct folder to the tube folder
 
     // tube color - folder w/ a static color, or oscil + ranges for HSB/RGB
-    let tubeFolder = gui.addFolder('tubes');
-    let tubes = {
-        controlType: 'static',
-        color: 0xeeeeee
-    };
-    tubeFolder.add(values.tubes, 'controlType', ['static', 'dynamic']).onChange( () => {
-        tubeFolder.visible = false;
+    parentTubeFolder = gui.addFolder('tubes');
+    parentTubeFolder.add(values.tubes, 'controlType', ['static', 'dynamic']).onChange( (value) => {
+       //console.log(parentTubeHolder);
+       console.log(value);
     });
-
-    let tubeStaticFolder = tubeFolder.addFolder('static');
-    tubeStaticFolder.addColor(values.tubes.static, 'color').onChange(() => {
+    parentTubeFolder.addColor(values.tubes.static, 'color').onChange(() => {
         let tubes = scene.getObjectByName('tubeGroup');
         if (tubes) {
             tubes.children.forEach((tube) => {
@@ -211,9 +213,38 @@ function createGUI() {
             });
         }
     });
+    parentTubeFolder.add(values.tubes.dynamic, 'oscillator', Array.from(oscillators.keys()));
+    parentTubeFolder.add(values.tubes.dynamic.color, 'rMin', 0, 255);
+    parentTubeFolder.add(values.tubes.dynamic.color, 'rMax', 0, 255);
+    parentTubeFolder.add(values.tubes.dynamic.color, 'gMin', 0, 255);
+    parentTubeFolder.add(values.tubes.dynamic.color, 'gMax', 0, 255);
+    parentTubeFolder.add(values.tubes.dynamic.color, 'bMin', 0, 255);
+    parentTubeFolder.add(values.tubes.dynamic.color, 'bMax', 0, 255);
 
-    let tubeDynamicFolder = tubeFolder.addFolder('dynamic');
-    tubeDynamicFolder.add(values.tubes.dynamic, 'oscillator', Array.from(oscillators.keys));
+    //
+    //
+    // let tempFolder = gui.addFolder('loading...');
+    // let tubeStaticFolder = tempFolder.addFolder('static');
+    //
+    // let tubeDynamicFolder = tempFolder.addFolder('dynamic');
+    // tubeDynamicFolder.add(values.tubes.dynamic, 'oscillator', Array.from(oscillators.keys));
+    //
+    // let colorTypeFolder = parentTubeFolder.add(values.tubes, 'controlType', ['static', 'dynamic']).onChange( () => {
+    //     if ( values.tubes.controlType == 'static' ) {
+    //         if ( parentTubeFolder.__folders.dynamic ) {
+    //             tubeStaticFolder.remove(tubeDynamicFolder);
+    //         }
+    //         parentTubeFolder.add(tubeStaticFolder);
+    //     } else {
+    //         if ( parentTubeFolder.__folders.static ) {
+    //             tubeStaticFolder.remove(tubeStaticFolder);
+    //         }
+    //         tubeStaticFolder.add(tubeDynamicFolder);
+    //     }
+    // });
+
+
+
 
 
     values.lights.pointLights.forEach((light) => {
@@ -301,7 +332,7 @@ function createGeometries() {
 
     dynamicValues.set('bigBubble.material.color', calc);
 
-    createBubble();
+    //createBubble();
 
 
 }

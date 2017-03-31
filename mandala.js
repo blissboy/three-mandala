@@ -12,8 +12,8 @@ var dynamicValues = new Map();
 var values = {
     bubble: {
         radius: 300,
-        latitudePoints: 20,
-        longitudePoints: 22,
+        latitudePoints: 17,
+        longitudePoints: 13,
         color: 0xff00ff
     },
     tubes: {
@@ -36,8 +36,8 @@ var values = {
     lights: {
         pointLights: [
             {
-                intensity: 0.5,
-                color: 0x0000ff,
+                intensity: 0.3,
+                color: 0x999999,
                 position: {
                     x: 0,
                     y: 0,
@@ -46,8 +46,8 @@ var values = {
                 name: 'light1'
             },
             {
-                intensity: 0.5,
-                color: 0xff0000,
+                intensity: 0.3,
+                color: 0x999999,
                 position: {
                     x: 0,
                     y: 400,
@@ -56,8 +56,8 @@ var values = {
                 name: 'light2'
             },
             {
-                intensity: 0.5,
-                color: 0x00ff00,
+                intensity: 0.3,
+                color: 0x999999,
                 position: {
                     x: 400,
                     y: 0,
@@ -228,6 +228,8 @@ function createTubesFolder() {
 }
 function populateTubesFolder(tubesFolder) {
 
+    const tubes_color = 'tubes.material.color';
+
     if ( values.tubes.controlType == 'static') {
         tubesFolder.addColor(values.tubes.static, 'color').onChange(() => {
             let tubes = scene.getObjectByName('tubeGroup');
@@ -235,11 +237,42 @@ function populateTubesFolder(tubesFolder) {
                 tubes.children.forEach((tube) => {
                     tube.material.color.set(values.tubes.static.color);
                 });
+                dynamicValues.delete(tubes_color);
             }
+
         }).name = 'tubeColor';
     } else {
         tubesFolder.add(values.tubes.dynamic, 'oscillator', Array.from(oscillators.keys()));
-        tubesFolder.add(values.tubes.dynamic.color, 'rMin', 0, values.tubes.dynamic.color.rMax);
+        tubesFolder.add(values.tubes.dynamic.color, 'rMin', 0, values.tubes.dynamic.color.rMax).onChange( () => {
+
+
+            let calc = {
+                evaluate: () => {
+
+                    let oscValue = 0;
+                    try {
+                        oscValue = oscillators.get(values.tubes.dynamic.oscillator)();
+                    } catch (err) {
+                        console.error(`error getting oscillator '${values.tubes.dynamic.oscillator}'. Received error: '${err.message}'`);
+                    }
+                    let color = new THREE.Color(
+                        (values.tubes.dynamic.color.rMin + (((values.tubes.dynamic.color.rMax - values.tubes.dynamic.color.rMin) / 2) * (1 + oscValue))) / 255.0,
+                        (values.tubes.dynamic.color.gMin + (((values.tubes.dynamic.color.gMax - values.tubes.dynamic.color.gMin) / 2) * (1 + oscValue))) / 255.0,
+                        (values.tubes.dynamic.color.bMin + (((values.tubes.dynamic.color.bMax - values.tubes.dynamic.color.bMin) / 2) * (1 + oscValue))) / 255.0
+                    )
+
+                    let tubes = scene.getObjectByName('tubeGroup');
+                    if (tubes) {
+                        tubes.children.forEach((tube) => {
+                            tube.material.color.set(color);
+                        });
+                    }
+                }
+            };
+
+            dynamicValues.set(tubes_color, calc);
+
+        });
         tubesFolder.add(values.tubes.dynamic.color, 'rMax', values.tubes.dynamic.color.rMin, 255);
         tubesFolder.add(values.tubes.dynamic.color, 'gMin', 0, values.tubes.dynamic.color.gMax);
         tubesFolder.add(values.tubes.dynamic.color, 'gMax', values.tubes.dynamic.color.gMin, 255);
@@ -306,10 +339,11 @@ function createGeometries() {
     let calc = {
         evaluate: () => {
             bigBubble.material.color.set(
-                `rgb(${Math.abs(Math.round(oscillators.get("sin60draw")() * 100))}%, 
-                 ${Math.abs(Math.round(oscillators.get("sin30draw")() * 100))}%, 
+                `rgb(${Math.abs(Math.round(oscillators.get("sin60draw")() * 100))}%,
+                 ${Math.abs(Math.round(oscillators.get("sin30draw")() * 100))}%,
                  ${Math.abs(Math.round(oscillators.get("sin20draw")() * 100))}%)`
-            )
+            );
+            bigBubble.rotation.x += .001;
         }
     }
 

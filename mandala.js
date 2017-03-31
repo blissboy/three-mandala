@@ -4,7 +4,7 @@ var scene, camera, renderer, cameraControls;
 var renderCount = 0;
 var gui;
 
-var parentTubeFolder;
+//var parentTubeFolder;
 
 var oscillators;
 var dynamicValues = new Map();
@@ -195,58 +195,7 @@ function createOscillators() {
 function createGUI() {
     gui = new dat.GUI();
 
-    // create folder for tubes
-    // create folders for choosing static/dynamic, static color, and dynamic color
-    // on select of each, attach children of correct folder to the tube folder
-
-    // tube color - folder w/ a static color, or oscil + ranges for HSB/RGB
-    parentTubeFolder = gui.addFolder('tubes');
-    parentTubeFolder.add(values.tubes, 'controlType', ['static', 'dynamic']).onChange( (value) => {
-       //console.log(parentTubeHolder);
-       console.log(value);
-    });
-    parentTubeFolder.addColor(values.tubes.static, 'color').onChange(() => {
-        let tubes = scene.getObjectByName('tubeGroup');
-        if (tubes) {
-            tubes.children.forEach((tube) => {
-                tube.material.color.set(values.tubes.static.color);
-            });
-        }
-    });
-    parentTubeFolder.add(values.tubes.dynamic, 'oscillator', Array.from(oscillators.keys()));
-    parentTubeFolder.add(values.tubes.dynamic.color, 'rMin', 0, 255);
-    parentTubeFolder.add(values.tubes.dynamic.color, 'rMax', 0, 255);
-    parentTubeFolder.add(values.tubes.dynamic.color, 'gMin', 0, 255);
-    parentTubeFolder.add(values.tubes.dynamic.color, 'gMax', 0, 255);
-    parentTubeFolder.add(values.tubes.dynamic.color, 'bMin', 0, 255);
-    parentTubeFolder.add(values.tubes.dynamic.color, 'bMax', 0, 255);
-
-    //
-    //
-    // let tempFolder = gui.addFolder('loading...');
-    // let tubeStaticFolder = tempFolder.addFolder('static');
-    //
-    // let tubeDynamicFolder = tempFolder.addFolder('dynamic');
-    // tubeDynamicFolder.add(values.tubes.dynamic, 'oscillator', Array.from(oscillators.keys));
-    //
-    // let colorTypeFolder = parentTubeFolder.add(values.tubes, 'controlType', ['static', 'dynamic']).onChange( () => {
-    //     if ( values.tubes.controlType == 'static' ) {
-    //         if ( parentTubeFolder.__folders.dynamic ) {
-    //             tubeStaticFolder.remove(tubeDynamicFolder);
-    //         }
-    //         parentTubeFolder.add(tubeStaticFolder);
-    //     } else {
-    //         if ( parentTubeFolder.__folders.static ) {
-    //             tubeStaticFolder.remove(tubeStaticFolder);
-    //         }
-    //         tubeStaticFolder.add(tubeDynamicFolder);
-    //     }
-    // });
-
-
-
-
-
+    createTubesFolder();
     values.lights.pointLights.forEach((light) => {
         let folder = gui.addFolder(light.name);
         folder.addColor(light, 'color').onChange(() => {
@@ -263,8 +212,42 @@ function createGUI() {
     folder.add(values.lights.ambientLight, 'intensity', 0, 1).onChange(() => {
         scene.getObjectByName(ambient_light_name).intensity = values.lights.ambientLight.intensity;
     })
-
 }
+
+function createTubesFolder() {
+    const control_type = 'controlType';
+    let tubesFolder = gui.addFolder('tubes');
+    tubesFolder.add(values.tubes, control_type, ['static', 'dynamic']).onChange( () => {
+        gui.__folders.tubes.__controllers.filter((c)=> c.name != control_type).forEach( (c) => {
+            c.remove();
+        });
+        populateTubesFolder(gui.__folders.tubes);
+    }).name = control_type;
+
+    populateTubesFolder(gui.__folders.tubes);
+}
+function populateTubesFolder(tubesFolder) {
+
+    if ( values.tubes.controlType == 'static') {
+        tubesFolder.addColor(values.tubes.static, 'color').onChange(() => {
+            let tubes = scene.getObjectByName('tubeGroup');
+            if (tubes) {
+                tubes.children.forEach((tube) => {
+                    tube.material.color.set(values.tubes.static.color);
+                });
+            }
+        }).name = 'tubeColor';
+    } else {
+        tubesFolder.add(values.tubes.dynamic, 'oscillator', Array.from(oscillators.keys()));
+        tubesFolder.add(values.tubes.dynamic.color, 'rMin', 0, values.tubes.dynamic.color.rMax);
+        tubesFolder.add(values.tubes.dynamic.color, 'rMax', values.tubes.dynamic.color.rMin, 255);
+        tubesFolder.add(values.tubes.dynamic.color, 'gMin', 0, values.tubes.dynamic.color.gMax);
+        tubesFolder.add(values.tubes.dynamic.color, 'gMax', values.tubes.dynamic.color.gMin, 255);
+        tubesFolder.add(values.tubes.dynamic.color, 'bMin', 0, values.tubes.dynamic.color.bMax);
+        tubesFolder.add(values.tubes.dynamic.color, 'bMax', values.tubes.dynamic.color.bMin, 255);
+    }
+}
+
 
 function createScene() {
     //testScope(new THREE.Vector3(100,0,0));

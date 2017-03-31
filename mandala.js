@@ -37,7 +37,7 @@ var values = {
         pointLights: [
             {
                 intensity: 0.3,
-                color: 0x999999,
+                color: 0x990000,
                 position: {
                     x: 0,
                     y: 0,
@@ -47,7 +47,7 @@ var values = {
             },
             {
                 intensity: 0.3,
-                color: 0x999999,
+                color: 0x009900,
                 position: {
                     x: 0,
                     y: 400,
@@ -57,7 +57,7 @@ var values = {
             },
             {
                 intensity: 0.3,
-                color: 0x999999,
+                color: 0x000099,
                 position: {
                     x: 400,
                     y: 0,
@@ -242,37 +242,34 @@ function populateTubesFolder(tubesFolder) {
 
         }).name = 'tubeColor';
     } else {
-        tubesFolder.add(values.tubes.dynamic, 'oscillator', Array.from(oscillators.keys()));
-        tubesFolder.add(values.tubes.dynamic.color, 'rMin', 0, values.tubes.dynamic.color.rMax).onChange( () => {
+        let calc = {
+            evaluate: () => {
 
-
-            let calc = {
-                evaluate: () => {
-
-                    let oscValue = 0;
-                    try {
-                        oscValue = oscillators.get(values.tubes.dynamic.oscillator)();
-                    } catch (err) {
-                        console.error(`error getting oscillator '${values.tubes.dynamic.oscillator}'. Received error: '${err.message}'`);
-                    }
-                    let color = new THREE.Color(
-                        (values.tubes.dynamic.color.rMin + (((values.tubes.dynamic.color.rMax - values.tubes.dynamic.color.rMin) / 2) * (1 + oscValue))) / 255.0,
-                        (values.tubes.dynamic.color.gMin + (((values.tubes.dynamic.color.gMax - values.tubes.dynamic.color.gMin) / 2) * (1 + oscValue))) / 255.0,
-                        (values.tubes.dynamic.color.bMin + (((values.tubes.dynamic.color.bMax - values.tubes.dynamic.color.bMin) / 2) * (1 + oscValue))) / 255.0
-                    )
-
-                    let tubes = scene.getObjectByName('tubeGroup');
-                    if (tubes) {
-                        tubes.children.forEach((tube) => {
-                            tube.material.color.set(color);
-                        });
-                    }
+                let oscValue = 0;
+                try {
+                    oscValue = oscillators.get(values.tubes.dynamic.oscillator)();
+                } catch (err) {
+                    console.error(`error getting oscillator '${values.tubes.dynamic.oscillator}'. Received error: '${err.message}'`);
                 }
-            };
+                let color = new THREE.Color(
+                    (values.tubes.dynamic.color.rMin + (((values.tubes.dynamic.color.rMax - values.tubes.dynamic.color.rMin) / 2) * (1 + oscValue))) / 255.0,
+                    (values.tubes.dynamic.color.gMin + (((values.tubes.dynamic.color.gMax - values.tubes.dynamic.color.gMin) / 2) * (1 + oscValue))) / 255.0,
+                    (values.tubes.dynamic.color.bMin + (((values.tubes.dynamic.color.bMax - values.tubes.dynamic.color.bMin) / 2) * (1 + oscValue))) / 255.0
+                )
 
-            dynamicValues.set(tubes_color, calc);
+                let tubes = scene.getObjectByName('tubeGroup');
+                if (tubes) {
+                    tubes.children.forEach((tube) => {
+                        tube.material.color.set(color);
+                    });
+                }
+            }
+        };
 
-        });
+        dynamicValues.set(tubes_color, calc);
+
+        tubesFolder.add(values.tubes.dynamic, 'oscillator', Array.from(oscillators.keys()));
+        tubesFolder.add(values.tubes.dynamic.color, 'rMin', 0, values.tubes.dynamic.color.rMax);
         tubesFolder.add(values.tubes.dynamic.color, 'rMax', values.tubes.dynamic.color.rMin, 255);
         tubesFolder.add(values.tubes.dynamic.color, 'gMin', 0, values.tubes.dynamic.color.gMax);
         tubesFolder.add(values.tubes.dynamic.color, 'gMax', values.tubes.dynamic.color.gMin, 255);
@@ -296,17 +293,7 @@ function updateScene() {
 }
 
 function createGeometries() {
-    let material = new THREE.MeshPhongMaterial({color: values.tubes.static.color});
-    let squiggleLines = createCurves();
-    let tubeGroup = new THREE.Group();
-    tubeGroup.name = 'tubeGroup';
-    createSquiggleTubes(squiggleLines).forEach((tube) => {
-        tubeGroup.add(new THREE.Mesh(
-            tube,
-            material
-        ));
-    });
-    scene.add(tubeGroup);
+    scene.add(createTubeGroup());
 
     // let ringGroup = new THREE.Group();
     // ringGroup.name = 'ringGroup';
@@ -352,6 +339,29 @@ function createGeometries() {
     //createBubble();
 
 
+}
+
+function createTubeGroup() {
+    let material = new THREE.MeshPhongMaterial({color: values.tubes.static.color});
+    let squiggleLines = createCurves();
+    let tubeGroup = new THREE.Group();
+    tubeGroup.name = 'tubeGroup';
+    createSquiggleTubes(squiggleLines).forEach((tube) => {
+        tubeGroup.add(new THREE.Mesh(
+            tube,
+            material
+        ));
+    });
+
+    let calc = {
+        evaluate: () => {
+            tubeGroup.children.forEach( (tube) => {
+              herehere tube.vertices.map((v,i) => i % 5 == 0).forEach()
+            });
+        }
+    }
+
+    return tubeGroup;
 }
 
 function createBubble() {
@@ -421,12 +431,12 @@ function updateGeometries() {
     //     console.log(woo);
     // }
 
-    let rotX = 0.005;
+    let rotX = 0.001;
     let stepX = 0.0001;
     let rotY = 0.001;
     let stepY = 0.0001;
     let rotZ = 0.003;
-    scene.children.forEach(c => {
+    scene.children.filter((c) => c.name != 'lights').forEach(c => {
         c.rotation.x += rotX;
         c.rotation.y += rotY;
         rotX += stepX;

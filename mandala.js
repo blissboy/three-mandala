@@ -24,12 +24,12 @@ var values = {
         dynamic: {
             oscillator: 'sin60draw',
             color: {
-                rMin:0,
-                rMax:255,
-                gMin:0,
-                gMax:255,
-                bMin:0,
-                bMax:255
+                rMin: 0,
+                rMax: 255,
+                gMin: 0,
+                gMax: 255,
+                bMin: 0,
+                bMax: 255
             }
         }
     },
@@ -78,16 +78,20 @@ var values = {
                 {
                     name: 'freq',
                     description: 'frequency',
-                    default: () => {return 60;}
+                    default: () => {
+                        return 60;
+                    }
                 },
                 {
                     name: 'count',
                     description: 'Number of cycles so far',
-                    default: () => {return 0;}
+                    default: () => {
+                        return 0;
+                    }
                 }
             ],
             value: (freq, count) => {
-                if ( freq() != 0 ) {
+                if (freq() != 0) {
                     return Math.sin(count() / freq());
                 } else {
                     console.error('dividing by zero thwarted');
@@ -171,20 +175,20 @@ function init() {
 }
 
 function getOscilatorTypes() {
-    return new Map(values.oscillatorTypes.map( (osc) => [osc.name, osc]));
+    return new Map(values.oscillatorTypes.map((osc) => [osc.name, osc]));
 }
 
 function createOscillators() {
     let oscillatorTypes = getOscilatorTypes();
 
-    oscillators = new Map(values.oscillators.map( (o) => {
+    oscillators = new Map(values.oscillators.map((o) => {
         let oscType = oscillatorTypes.get(o.type);
         // set the map of params using the defaults
         let argMap = new Map(oscType.parameters.map(p => [p.name, p.default]));
         // override the defaults where the osc instance did so
         o.parameters.forEach(p => argMap.set(p.name, p.valueFunc));
         // create the properly ordered arg list array
-        let args = oscType.parameters.map( p => {
+        let args = oscType.parameters.map(p => {
             return argMap.get(p.name);
         });
 
@@ -217,8 +221,8 @@ function createGUI() {
 function createTubesFolder() {
     const control_type = 'controlType';
     let tubesFolder = gui.addFolder('tubes');
-    tubesFolder.add(values.tubes, control_type, ['static', 'dynamic']).onChange( () => {
-        gui.__folders.tubes.__controllers.filter((c)=> c.name != control_type).forEach( (c) => {
+    tubesFolder.add(values.tubes, control_type, ['static', 'dynamic']).onChange(() => {
+        gui.__folders.tubes.__controllers.filter((c) => c.name != control_type).forEach((c) => {
             c.remove();
         });
         populateTubesFolder(gui.__folders.tubes);
@@ -230,7 +234,7 @@ function populateTubesFolder(tubesFolder) {
 
     const tubes_color = 'tubes.material.color';
 
-    if ( values.tubes.controlType == 'static') {
+    if (values.tubes.controlType == 'static') {
         tubesFolder.addColor(values.tubes.static, 'color').onChange(() => {
             let tubes = scene.getObjectByName('tubeGroup');
             if (tubes) {
@@ -294,7 +298,7 @@ function updateScene() {
 
 function createGeometries() {
     scene.add(createTubeGroup());
-
+    //scene.add(createBigBubble());
     // let ringGroup = new THREE.Group();
     // ringGroup.name = 'ringGroup';
     // createSquiggleRings(squiggleLines).forEach((ring) => {
@@ -305,6 +309,13 @@ function createGeometries() {
     // });
     // scene.add(ringGroup);
 
+
+    //createBubble();
+
+
+}
+
+function createBigBubble() {
     let bubbleGeometry = new THREE.SphereBufferGeometry(
         values.bubble.radius,
         values.bubble.latitudePoints,
@@ -321,8 +332,6 @@ function createGeometries() {
     let bigBubble = new THREE.Mesh(bubbleWireframe, bubbleWireFrameMaterial);
     bigBubble.name = 'bigBubble';
 
-    scene.add(bigBubble);
-
     let calc = {
         evaluate: () => {
             bigBubble.material.color.set(
@@ -335,16 +344,15 @@ function createGeometries() {
     }
 
     dynamicValues.set('bigBubble.material.color', calc);
-
-    //createBubble();
-
-
+    return bigBubble;
 }
 
 function createTubeGroup() {
     let material = new THREE.MeshPhongMaterial({color: values.tubes.static.color});
     let squiggleLines = createCurves();
     let tubeGroup = new THREE.Group();
+    const wriggle_size = .4;
+    const wriggle_step = 15;
     tubeGroup.name = 'tubeGroup';
     createSquiggleTubes(squiggleLines).forEach((tube) => {
         tubeGroup.add(new THREE.Mesh(
@@ -355,11 +363,33 @@ function createTubeGroup() {
 
     let calc = {
         evaluate: () => {
-            tubeGroup.children.forEach( (tube) => {
-              herehere tube.vertices.map((v,i) => i % 5 == 0).forEach()
+            let wriggleX = wriggle_size * oscillators.get('sin60draw')();
+            let wriggleY = wriggle_size * oscillators.get('sin30draw')();
+            let wriggleZ = wriggle_size * oscillators.get('sin20draw')();
+            let wriggle = new THREE.Vector3(wriggleX, wriggleY, wriggleZ);
+            let wriggle1 = new THREE.Vector3(wriggleY, wriggleZ, wriggleX);
+            let wriggle2 = new THREE.Vector3(wriggleZ, wriggleX, wriggleY);
+            tubeGroup.children.forEach((tube) => {
+                tube.geometry.vertices.forEach((pt, i) => {
+                    switch (i % wriggle_step) {
+                        case 0:
+                            pt = pt.add( wriggle );
+                            break;
+                        case 1:
+                            pt = pt.add( wriggle1 );
+                            break;
+                        case 2:
+                            pt = pt.add( wriggle2 );
+                            break;
+                    }
+                });
+                tube.geometry.verticesNeedUpdate = true;
+                //tube.
             });
         }
     }
+
+    dynamicValues.set('tubes', calc);
 
     return tubeGroup;
 }
@@ -367,16 +397,16 @@ function createTubeGroup() {
 function createBubble() {
 
     let shader = THREE.FresnelShader;
-    let uniforms = THREE.UniformsUtils.clone( shader.uniforms );
-    uniforms[ "tCube" ].value = getBubbleTexture();
-    let material = new THREE.ShaderMaterial( {
+    let uniforms = THREE.UniformsUtils.clone(shader.uniforms);
+    uniforms["tCube"].value = getBubbleTexture();
+    let material = new THREE.ShaderMaterial({
         uniforms: uniforms,
         vertexShader: shader.vertexShader,
         fragmentShader: shader.fragmentShader
-    } );
+    });
 
-    let bubbleGeometry = new THREE.SphereGeometry( 100, 64, 32 );
-    let bubble = new THREE.Mesh( bubbleGeometry, material );
+    let bubbleGeometry = new THREE.SphereGeometry(100, 64, 32);
+    let bubble = new THREE.Mesh(bubbleGeometry, material);
     bubble.name = 'bubble';
     //sphere.position.set(0, 50, 100);
     //scene.background = getBubbleTexture();
@@ -415,7 +445,7 @@ function createBubble() {
 function getBubbleTexture() {
     let textureImage = 'images/RedSquare_Tuthill_1024.jpg';
     let urls = Array(6).fill(textureImage);
-    let textureCube = new THREE.CubeTextureLoader().load( urls );
+    let textureCube = new THREE.CubeTextureLoader().load(urls);
     textureCube.format = THREE.RGBFormat;
 
     return textureCube;
@@ -443,7 +473,7 @@ function updateGeometries() {
         rotY += stepY;
     });
 
-    dynamicValues.forEach( (dv) => dv.evaluate());
+    dynamicValues.forEach((dv) => dv.evaluate());
 
 }
 
@@ -473,7 +503,7 @@ function setupCamera() {
     camera.position.z = 600;
     camera.position.x = 200;
     camera.position.y = -12;
-    cameraControls.target = new THREE.Vector3(0,0,0);
+    cameraControls.target = new THREE.Vector3(0, 0, 0);
     cameraControls.update();
 }
 

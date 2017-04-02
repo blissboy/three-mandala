@@ -298,7 +298,7 @@ function updateScene() {
 
 function createGeometries() {
     scene.add(createTubeGroup());
-    //scene.add(createBigBubble());
+    scene.add(createBigBubble());
     // let ringGroup = new THREE.Group();
     // ringGroup.name = 'ringGroup';
     // createSquiggleRings(squiggleLines).forEach((ring) => {
@@ -351,8 +351,8 @@ function createTubeGroup() {
     let material = new THREE.MeshPhongMaterial({color: values.tubes.static.color});
     let squiggleLines = createCurves();
     let tubeGroup = new THREE.Group();
-    const wriggle_size = .4;
-    const wriggle_step = 15;
+    const wriggle_size = 2;
+    const wriggle_step = 45;
     tubeGroup.name = 'tubeGroup';
     createSquiggleTubes(squiggleLines).forEach((tube) => {
         tubeGroup.add(new THREE.Mesh(
@@ -500,7 +500,7 @@ function updateLighting() {
 }
 
 function setupCamera() {
-    camera.position.z = 600;
+    camera.position.z = 900;
     camera.position.x = 200;
     camera.position.y = -12;
     cameraControls.target = new THREE.Vector3(0, 0, 0);

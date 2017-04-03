@@ -18,7 +18,7 @@ var values = {
         color: 0xff00ff
     },
     tubes: {
-        controlType: 'static',
+        controlType: 'dynamic',
         static: {
             color: 0xeeeeee
         },

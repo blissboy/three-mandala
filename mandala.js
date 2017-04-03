@@ -297,12 +297,12 @@ function populateTubesGUIFolder(tubesFolder) {
         // even though this implies it, don't make this enforce that min<max, as allowing
         // for the opposite allows "negative" values which let different colors swell at
         // different times, which is nice.
-        tubesFolder.add(values.tubes.dynamic.color, 'rMin', 0, values.tubes.dynamic.color.rMax);
-        tubesFolder.add(values.tubes.dynamic.color, 'rMax', values.tubes.dynamic.color.rMin, 255);
-        tubesFolder.add(values.tubes.dynamic.color, 'gMin', 0, values.tubes.dynamic.color.gMax);
-        tubesFolder.add(values.tubes.dynamic.color, 'gMax', values.tubes.dynamic.color.gMin, 255);
-        tubesFolder.add(values.tubes.dynamic.color, 'bMin', 0, values.tubes.dynamic.color.bMax);
-        tubesFolder.add(values.tubes.dynamic.color, 'bMax', values.tubes.dynamic.color.bMin, 255);
+        tubesFolder.add(values.tubes.dynamic.color, 'rMin', 0, 255);
+        tubesFolder.add(values.tubes.dynamic.color, 'rMax', 0, 255);
+        tubesFolder.add(values.tubes.dynamic.color, 'gMin', 0, 255);
+        tubesFolder.add(values.tubes.dynamic.color, 'gMax', 0, 255);
+        tubesFolder.add(values.tubes.dynamic.color, 'bMin', 0, 255);
+        tubesFolder.add(values.tubes.dynamic.color, 'bMax', 0, 255);
     }
 }
 

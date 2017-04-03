@@ -8,12 +8,13 @@ var gui;
 
 var oscillators;
 var dynamicValues = new Map();
+var fadeOuts = new Map();
 
 var values = {
     bubble: {
         radius: 300,
-        latitudePoints: 17,
-        longitudePoints: 13,
+        latitudePoints: 29,
+        longitudePoints: 7,
         color: 0xff00ff
     },
     tubes: {
@@ -24,11 +25,11 @@ var values = {
         dynamic: {
             oscillator: 'sin60draw',
             color: {
-                rMin: 0,
-                rMax: 255,
+                rMin: 255,
+                rMax: 12,
                 gMin: 0,
-                gMax: 255,
-                bMin: 0,
+                gMax: 128,
+                bMin: 20,
                 bMax: 255
             }
         }
@@ -67,7 +68,7 @@ var values = {
             }
         ],
         ambientLight: {
-            intensity: 0.2,
+            intensity: 0.32,
             color: 0xffffff
         }
     },
@@ -142,6 +143,20 @@ var values = {
                     valueFunc: () => renderCount
                 }
             ]
+        },
+        {
+            name: 'sin49draw',
+            type: 'sin',
+            parameters: [
+                {
+                    name: 'freq',
+                    valueFunc: () => 49
+                },
+                {
+                    name: 'count',
+                    valueFunc: () => renderCount
+                }
+            ]
         }
     ]
 
@@ -199,7 +214,26 @@ function createOscillators() {
 function createGUI() {
     gui = new dat.GUI();
 
-    createTubesFolder();
+    createTubesGUI();
+    createLightsGUI();
+    createBubbleGUI();
+
+
+}
+
+function createTubesGUI() {
+    const control_type = 'controlType';
+    let tubesFolder = gui.addFolder('tubes');
+    tubesFolder.add(values.tubes, control_type, ['static', 'dynamic']).onChange(() => {
+        gui.__folders.tubes.__controllers.filter((c) => c.name != control_type).forEach((c) => {
+            c.remove();
+        });
+        populateTubesGUIFolder(gui.__folders.tubes);
+    }).name = control_type;
+
+    populateTubesGUIFolder(gui.__folders.tubes);
+}
+function createLightsGUI() {
     values.lights.pointLights.forEach((light) => {
         let folder = gui.addFolder(light.name);
         folder.addColor(light, 'color').onChange(() => {
@@ -217,20 +251,7 @@ function createGUI() {
         scene.getObjectByName(ambient_light_name).intensity = values.lights.ambientLight.intensity;
     })
 }
-
-function createTubesFolder() {
-    const control_type = 'controlType';
-    let tubesFolder = gui.addFolder('tubes');
-    tubesFolder.add(values.tubes, control_type, ['static', 'dynamic']).onChange(() => {
-        gui.__folders.tubes.__controllers.filter((c) => c.name != control_type).forEach((c) => {
-            c.remove();
-        });
-        populateTubesFolder(gui.__folders.tubes);
-    }).name = control_type;
-
-    populateTubesFolder(gui.__folders.tubes);
-}
-function populateTubesFolder(tubesFolder) {
+function populateTubesGUIFolder(tubesFolder) {
 
     const tubes_color = 'tubes.material.color';
 
@@ -273,6 +294,9 @@ function populateTubesFolder(tubesFolder) {
         dynamicValues.set(tubes_color, calc);
 
         tubesFolder.add(values.tubes.dynamic, 'oscillator', Array.from(oscillators.keys()));
+        // even though this implies it, don't make this enforce that min<max, as allowing
+        // for the opposite allows "negative" values which let different colors swell at
+        // different times, which is nice.
         tubesFolder.add(values.tubes.dynamic.color, 'rMin', 0, values.tubes.dynamic.color.rMax);
         tubesFolder.add(values.tubes.dynamic.color, 'rMax', values.tubes.dynamic.color.rMin, 255);
         tubesFolder.add(values.tubes.dynamic.color, 'gMin', 0, values.tubes.dynamic.color.gMax);
@@ -280,6 +304,57 @@ function populateTubesFolder(tubesFolder) {
         tubesFolder.add(values.tubes.dynamic.color, 'bMin', 0, values.tubes.dynamic.color.bMax);
         tubesFolder.add(values.tubes.dynamic.color, 'bMax', values.tubes.dynamic.color.bMin, 255);
     }
+}
+
+function createBubbleGUI() {
+    let bubbleFolder = gui.addFolder('bubble');
+
+    bubbleFolder.add(values.bubble, 'latitudePoints', 2, 30).onChange( () => {
+        // rename the current tubegroup to something that gets slowly nuked
+        let oldTubeGroupName = getUniqueGroupName('oldTubeGroup');
+        let oldTubeGroup = scene.getChildByName('tubeGroup');
+        oldTubeGroup.name = oldTubeGroupName; // TODO: uniqueify by name
+        fadeOuts.set( oldTubeGroupName, createFadeOut(oldTubeGroupName));
+        createGeometries(); // no big deal, just redo everything.
+    });
+    bubbleFolder.add(values.bubble, 'longitudePoints', 2, 30).onChange( () => {
+        // rename the current tubegroup to something that gets slowly nuked
+        let oldTubeGroupName = getUniqueGroupName('oldTubeGroup');
+        let oldTubeGroup = scene.getChildByName('tubeGroup');
+        oldTubeGroup.name = oldTubeGroupName; // TODO: uniqueify by name
+        fadeOuts.set( oldTubeGroupName, createFadeOut(oldTubeGroupName));
+        createGeometries(); // no big deal, just redo everything.
+    });
+
+}
+
+function getUniqueGroupName(name) {
+    let uniqueifier = 1;
+    let usedName = name;
+    while (scene.getObjectByName(usedName)) {
+        uniqueifier++;
+        usedName = name + uniqueifier;
+    }
+    return usedName;
+}
+
+function createFadeOut(theName) {
+    return {
+        name: theName,
+        count: 30,
+        timesCalled: 0,
+        fade: (me) => {
+            if ( me.timesCalled++ > me.count) {
+                //scene.removeChild(me.name);
+                let meObject = scene.getObjectByName(me.name);
+                if ( meObject) {
+                    scene.remove(meObject);
+                }
+                fadeOuts.delete(me.name);
+            }
+        }
+        // something that fades out the old tubeGroup, for now just nuke
+    };
 }
 
 
@@ -294,6 +369,7 @@ function updateScene() {
     updateGeometries();
     updateLighting();
     updateCamera();
+    processFadeouts();
 }
 
 function createGeometries() {
@@ -508,6 +584,12 @@ function setupCamera() {
 }
 
 function updateCamera() {
+}
+
+function processFadeouts() {
+    fadeOuts.forEach( (value, key, map) => {
+        value.fade(value);
+    })
 }
 
 /**

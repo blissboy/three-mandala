@@ -424,7 +424,7 @@ function createBigBubble() {
 }
 
 function createTubeGroup() {
-    let material = new THREE.MeshPhongMaterial({color: values.tubes.static.color});
+    let material = new THREE.MeshPhongMaterial({color: values.tubes.static.color, specular: 0xffffff});
     let squiggleLines = createCurves();
     let tubeGroup = new THREE.Group();
     const wriggle_size = 2;

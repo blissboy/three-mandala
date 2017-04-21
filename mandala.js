@@ -68,7 +68,7 @@ var values = {
             }
         ],
         ambientLight: {
-            intensity: 0.32,
+            intensity: 0.09,
             color: 0xffffff
         }
     },
